@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: harbor.phink8s.com/library/ip-tracker
+  pullPolicy: Always
+  # Tag is set from Chart.yaml appVersion
+
+namespace: web-app
+
+secretsName: mylivetemps-secrets
+
+service:
+  service: ip-tracker-svc
+  port: 80
+
+ingress:
+  enabled: true
+  host: iptracker.phink8s.com
+  secretName: wildcard-phink8s.com-tls

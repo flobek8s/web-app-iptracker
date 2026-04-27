@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Tracker - Network Management</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #0dcaf0;
+            --dark-color: #212529;
+            --light-color: #f8f9fa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #5b8fd9 0%, #3f6fb1 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 220px;
+            z-index: 1000;
+            overflow-y: auto;
+            transition: transform 0.25s ease;
+        }
+
+        .mobile-sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+            z-index: 999;
+        }
+
+        .sidebar-toggle {
+            display: none;
+        }
+
+        .sidebar-brand {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-brand i {
+            color: #3498db;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar-nav a {
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: #3498db;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar-nav i {
+            min-width: 20px;
+        }
+
+        .main-content {
+            margin-left: 220px;
+            padding: 30px;
+            padding-top: 20px;
+        }
+
+        .navbar-top {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-top h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        .card {
+            position: relative;
+            background: #ffffff;
+            border: none;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 78px;
+            background: linear-gradient(135deg, #5b8fd9 0%, #3f6fb1 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            position: relative;
+            z-index: 5;
+            overflow: visible;
+            background: transparent;
+            color: white;
+            border: none;
+            border-radius: 0 !important;
+            margin: 0;
+            background-clip: padding-box;
+            padding: 20px;
+            font-weight: 600;
+        }
+
+        .card-body {
+            position: relative;
+            z-index: 1;
+            background: #ffffff;
+        }
+
+        .card .dropdown-menu {
+            z-index: 1100;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #5b8fd9;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-assigned {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .badge-available {
+            background-color: #e7e7e7;
+            color: #383838;
+        }
+
+        .badge-vpn {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .table-responsive {
+            border-radius: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .btn-custom {
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #5b8fd9 0%, #3f6fb1 100%);
+            color: white;
+        }
+
+        .btn-secondary-custom {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #5b8fd9 0%, #3f6fb1 100%);
+            color: white;
+            border: none;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+
+        .form-control {
+            padding: 10px 15px;
+        }
+
+        .form-select {
+            /* Keep extra right padding so the native/Bootstrap arrow does not overlap values. */
+            padding: 10px 2.5rem 10px 15px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #5b8fd9;
+            box-shadow: 0 0 0 0.2rem rgba(91, 143, 217, 0.25);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding-left: 40px;
+            padding-right: 40px;
+            border-radius: 25px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+        }
+
+        .search-clear-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #7f8c8d;
+            width: 20px;
+            height: 20px;
+            line-height: 1;
+            border-radius: 50%;
+            display: flex;
+            visibility: hidden;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .search-clear-btn:hover {
+            background: #e9ecef;
+            color: #2c3e50;
+        }
+
+        .range-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #5b8fd9;
+        }
+
+        .range-info-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .range-info-detail {
+            color: #7f8c8d;
+            font-size: 13px;
+            margin: 3px 0;
+        }
+
+        .network-diagram {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .ip-row {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .ip-row:hover {
+            background: #f8f9fa;
+        }
+
+        .ip-row:last-child {
+            border-bottom: none;
+        }
+
+        .dataTables_wrapper {
+            color: #2c3e50;
+        }
+
+        .dataTables_filter input {
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .dataTables_paginate .pagination {
+            gap: 5px;
+        }
+
+        .dataTables_paginate .page-link {
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .dataTables_paginate .page-item.active .page-link {
+            background-color: #5b8fd9;
+            border-color: #5b8fd9;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-buttons .btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+
+        .ip-with-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ip-link {
+            color: #4e7fc2;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .ip-link:hover {
+            text-decoration: underline;
+        }
+
+        .note-icon-btn {
+            color: #f0ad4e;
+            border: none;
+            background: none;
+            padding: 0;
+            line-height: 1;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .note-icon-btn:hover {
+            color: #d4860a;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 240px;
+                transform: translateX(-100%);
+            }
+
+            body.sidebar-open .sidebar {
+                transform: translateX(0);
+            }
+
+            body.sidebar-open .mobile-sidebar-backdrop {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+
+            .sidebar-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 6px 10px;
+                border: 1px solid #d6deea;
+            }
+
+            .navbar-top {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .navbar-top .d-flex {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-number {
+                font-size: 24px;
+            }
+
+            #ips-table,
+            #tracked-table {
+                min-width: 820px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 10px;
+            }
+
+            .navbar-top h1 {
+                font-size: 1.2rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            #ips-table,
+            #tracked-table {
+                min-width: 760px;
+            }
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        .tab-content {
+            padding: 20px 0;
+        }
+
+        .nav-tabs .nav-link {
+            color: #2c3e50;
+            border: none;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            font-weight: 600;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #5b8fd9;
+            border-color: #5b8fd9;
+            background: none;
+        }
+
+        .nav-tabs {
+            border-bottom: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <i class="fas fa-network-wired"></i>
+            <span>IPTracker</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="#dashboard" class="nav-link active" data-tab="dashboard"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+            <li><a href="#ips" class="nav-link" data-tab="ips"><i class="fas fa-list"></i> <span>All IPs</span></a></li>
+            <li><a href="#tracked-devices" class="nav-link" data-tab="tracked-devices"><i class="fas fa-laptop-house"></i> <span>Tracked Devices</span></a></li>
+            <li><a href="#network" class="nav-link" data-tab="network"><i class="fas fa-sitemap"></i> <span>Network Config</span></a></li>
+            <li><a href="#vpn" class="nav-link" data-tab="vpn"><i class="fas fa-shield-alt"></i> <span>VPN</span></a></li>
+            <li><a href="#add-ip" class="nav-link" data-tab="add-ip"><i class="fas fa-plus-circle"></i> <span>Add IP</span></a></li>
+        </ul>
+    </div>
+    <div class="mobile-sidebar-backdrop" id="mobile-sidebar-backdrop" onclick="closeSidebar()"></div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navigation -->
+        <div class="navbar-top">
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-secondary sidebar-toggle" type="button" aria-label="Toggle navigation" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="page-title">Dashboard</h1>
+            </div>
+            <div>
+                <span style="color: #7f8c8d; font-size: 12px;">Welcome to IP Tracker</span>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content-section">
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-ips">0</div>
+                        <div class="stat-label">Total IPs</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-number" id="assigned-ips" style="color: #28a745;">0</div>
+                        <div class="stat-label">Assigned IPs</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-number" id="available-ips" style="color: #ffc107;">0</div>
+                        <div class="stat-label">Available IPs</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-number" id="vpn-devices" style="color: #0dcaf0;">0</div>
+                        <div class="stat-label">VPN Devices</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Overview -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-router"></i> Network Configuration
+                        </div>
+                        <div class="card-body">
+                            <div id="network-overview"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-shield-alt"></i> VPN Configuration
+                        </div>
+                        <div class="card-body">
+                            <div id="vpn-overview"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent IPs -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-clock"></i> Recently Updated IPs
+                </div>
+                <div class="card-body">
+                    <div id="recent-ips"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All IPs Tab -->
+        <div id="ips" class="tab-content-section" style="display:none;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center g-2">
+                        <div class="col-lg-3 col-md-4">
+                            <i class="fas fa-list"></i> All Static IPs
+                        </div>
+                        <div class="col-lg-6 col-md-8">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="ip-search" class="form-control" placeholder="Search IPs, systems, hostnames...">
+                                <button class="search-clear-btn" id="ip-search-clear" type="button" aria-label="Clear IP search" onclick="clearSearchBox('ip-search', loadIPs)">&times;</button>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-12 text-md-end">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-file-export"></i> Export
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><button class="dropdown-item" type="button" onclick="exportIPsCSV()"><i class="fas fa-file-csv me-2"></i>CSV</button></li>
+                                    <li><button class="dropdown-item" type="button" onclick="exportIPsMarkdown()"><i class="fas fa-file-lines me-2"></i>Markdown</button></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Category Filter</label>
+                            <select id="category-filter" class="form-select">
+                                <option value="">All Categories</option>
+                                <option value="Network Equipment">Network Equipment</option>
+                                <option value="Servers & Devices">Servers & Devices</option>
+                                <option value="Kubernetes">Kubernetes</option>
+                                <option value="Dynamic">Dynamic</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Status Filter</label>
+                            <select id="status-filter" class="form-select">
+                                <option value="">All</option>
+                                <option value="assigned">Assigned</option>
+                                <option value="available">Available</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">VPN Filter</label>
+                            <select id="vpn-filter" class="form-select">
+                                <option value="">All Devices</option>
+                                <option value="vpn">Behind VPN Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-custom btn-primary-custom w-100 mt-4" onclick="loadIPs()">
+                                <i class="fas fa-filter"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="ips-table" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>System</th>
+                                    <th>Hostname</th>
+                                    <th>MAC Address</th>
+                                    <th>Status</th>
+                                    <th>Category</th>
+                                    <th>VPN</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tracked Devices Tab -->
+        <div id="tracked-devices" class="tab-content-section" style="display:none;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center g-2">
+                        <div class="col-lg-3 col-md-4">
+                            <i class="fas fa-laptop-house"></i> Tracked Non-Static Devices
+                        </div>
+                        <div class="col-lg-4 col-md-5">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="tracked-search" class="form-control" placeholder="Search name, MAC, IP, notes...">
+                                <button class="search-clear-btn" id="tracked-search-clear" type="button" aria-label="Clear tracked device search" onclick="clearSearchBox('tracked-search', loadTrackedDevices)">&times;</button>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-3">
+                            <select id="tracked-vpn-filter" class="form-select">
+                                <option value="">All Devices</option>
+                                <option value="vpn">Behind VPN</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-12 text-md-end">
+                            <div class="d-inline-flex gap-2">
+                                <button class="btn btn-custom btn-primary-custom" type="button" onclick="openTrackedDeviceModal()">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-file-export"></i> Export
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><button class="dropdown-item" type="button" onclick="exportTrackedDevicesCSV()"><i class="fas fa-file-csv me-2"></i>CSV</button></li>
+                                        <li><button class="dropdown-item" type="button" onclick="exportTrackedDevicesMarkdown()"><i class="fas fa-file-lines me-2"></i>Markdown</button></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="tracked-table" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Device Name</th>
+                                    <th>MAC Address</th>
+                                    <th>Current IP</th>
+                                    <th>VPN</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Config Tab -->
+        <div id="network" class="tab-content-section" style="display:none;">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <span><i class="fas fa-sitemap"></i> Network Ranges</span>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-light" type="button" onclick="exportNetworkConfigCSV()">
+                                    <i class="fas fa-file-csv"></i> CSV
+                                </button>
+                                <button class="btn btn-sm btn-light" type="button" onclick="exportNetworkConfigMarkdown()">
+                                    <i class="fas fa-file-lines"></i> Markdown
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="network-ranges"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-cog"></i> Configuration Details
+                        </div>
+                        <div class="card-body">
+                            <div id="network-details"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VPN Tab -->
+        <div id="vpn" class="tab-content-section" style="display:none;">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-shield-alt"></i> VPN Settings
+                        </div>
+                        <div class="card-body">
+                            <form id="vpn-form">
+                                <div class="mb-3">
+                                    <label class="form-label">VPN Provider</label>
+                                    <input type="text" id="vpn_provider" class="form-control" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">External IP</label>
+                                    <input type="text" id="vpn_external_ip" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tunnel IP</label>
+                                    <input type="text" id="vpn_tunnel_ip" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tunnel Subnet</label>
+                                    <input type="text" id="vpn_tunnel_subnet" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">VPN Type</label>
+                                    <input type="text" id="vpn_type" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Port</label>
+                                    <input type="number" id="vpn_port" class="form-control">
+                                </div>
+                                <button type="button" class="btn btn-custom btn-primary-custom w-100" onclick="saveVPNSettings()">
+                                    <i class="fas fa-save"></i> Save VPN Settings
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <span><i class="fas fa-devices"></i> Devices Behind VPN</span>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-light" type="button" onclick="exportVPNDevicesCSV()">
+                                    <i class="fas fa-file-csv"></i> CSV
+                                </button>
+                                <button class="btn btn-sm btn-light" type="button" onclick="exportVPNDevicesMarkdown()">
+                                    <i class="fas fa-file-lines"></i> Markdown
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="vpn-devices-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add IP Tab -->
+        <div id="add-ip" class="tab-content-section" style="display:none;">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-plus-circle"></i> Add New IP
+                        </div>
+                        <div class="card-body">
+                            <form id="add-ip-form">
+                                <div class="mb-3">
+                                    <label class="form-label">IP Address *</label>
+                                    <input type="text" id="add_ip" class="form-control" placeholder="e.g., 192.168.20.50" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">System Name</label>
+                                    <input type="text" id="add_system" class="form-control" placeholder="e.g., My-Server">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Hostname</label>
+                                    <input type="text" id="add_hostname" class="form-control" placeholder="e.g., server01">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">MAC Address</label>
+                                    <input type="text" id="add_mac" class="form-control" placeholder="e.g., 00:11:22:33:44:55">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Category</label>
+                                    <select id="add_category" class="form-select">
+                                        <option value="Other">Other</option>
+                                        <option value="Network Equipment">Network Equipment</option>
+                                        <option value="Servers & Devices">Servers & Devices</option>
+                                        <option value="Kubernetes">Kubernetes</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Notes</label>
+                                    <textarea id="add_notes" class="form-control" placeholder="Any notes..." rows="3"></textarea>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="add_is_assigned">
+                                    <label class="form-check-label" for="add_is_assigned">
+                                        Mark as Assigned
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="add_behind_vpn">
+                                    <label class="form-check-label" for="add_behind_vpn">
+                                        Behind VPN
+                                    </label>
+                                </div>
+                                <button type="button" class="btn btn-custom btn-primary-custom w-100" onclick="addNewIP()">
+                                    <i class="fas fa-plus"></i> Add IP
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-info-circle"></i> Available IP Ranges
+                        </div>
+                        <div class="card-body" id="available-ranges">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tracked Device Modal -->
+    <div class="modal fade" id="trackedDeviceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-laptop-house"></i> <span id="tracked-modal-title">Add Tracked Device</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="tracked-device-form">
+                        <input type="hidden" id="tracked_id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Device Name *</label>
+                                <input type="text" id="tracked_device_name" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">MAC Address *</label>
+                                <input type="text" id="tracked_mac" class="form-control" placeholder="AA:BB:CC:DD:EE:FF" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Current IP (optional)</label>
+                                <input type="text" id="tracked_current_ip" class="form-control" placeholder="e.g., 192.168.20.150">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="tracked_behind_vpn">
+                                    <label class="form-check-label" for="tracked_behind_vpn">Behind VPN</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notes</label>
+                                <textarea id="tracked_notes" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="tracked-delete-btn" class="btn btn-danger" onclick="deleteTrackedDevice()" style="display:none;">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                    <button type="button" class="btn btn-custom btn-primary-custom" onclick="saveTrackedDevice()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Edit IP Record</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-ip-form">
+                        <input type="hidden" id="edit_id">
+                        <div class="mb-3">
+                            <label class="form-label">IP Address</label>
+                            <input type="text" id="edit_ip" class="form-control" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">System Name</label>
+                            <input type="text" id="edit_system" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hostname</label>
+                            <input type="text" id="edit_hostname" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">MAC Address</label>
+                            <input type="text" id="edit_mac" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select id="edit_category" class="form-select">
+                                <option value="Other">Other</option>
+                                <option value="Network Equipment">Network Equipment</option>
+                                <option value="Servers & Devices">Servers & Devices</option>
+                                <option value="Kubernetes">Kubernetes</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea id="edit_notes" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="edit_is_assigned">
+                            <label class="form-check-label" for="edit_is_assigned">
+                                Mark as Assigned
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="edit_behind_vpn">
+                            <label class="form-check-label" for="edit_behind_vpn">
+                                Behind VPN
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteIP()">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                    <button type="button" class="btn btn-custom btn-primary-custom" onclick="saveEditIP()">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        let currentEditId = null;
+        let currentTrackedEditId = null;
+        let dataTable = null;
+        let latestIPsData = [];
+        let latestTrackedDevicesData = [];
+        let latestNetworkInfo = null;
+        let latestVPNDevicesData = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            setupEventListeners();
+            loadNetworkInfo();
+            loadVPNSettings();
+        });
+
+        // Tab Navigation
+        function setupEventListeners() {
+            document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tab = this.getAttribute('data-tab');
+                    openTab(tab);
+                    
+                    // Update active state
+                    document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+
+                    if (window.matchMedia('(max-width: 992px)').matches) {
+                        closeSidebar();
+                    }
+                });
+            });
+
+            // Delegate note clicks so handler survives DataTables redraws.
+            $('#ips-table tbody').off('click.notepop').on('click.notepop', '.note-icon-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const btn = this;
+                const noteText = decodeURIComponent(btn.dataset.note || '');
+                let pop = bootstrap.Popover.getInstance(btn);
+
+                if (!pop) {
+                    pop = new bootstrap.Popover(btn, {
+                        trigger: 'manual',
+                        placement: 'right',
+                        html: true,
+                        title: '<i class="fas fa-sticky-note text-warning"></i> Notes',
+                        content: `<div style="white-space: pre-line;">${escapeHtml(noteText)}</div>`
+                    });
+                }
+
+                // Close any other open note popovers first.
+                document.querySelectorAll('.note-icon-btn').forEach(otherBtn => {
+                    if (otherBtn !== btn) {
+                        const otherPop = bootstrap.Popover.getInstance(otherBtn);
+                        if (otherPop) otherPop.hide();
+                    }
+                });
+
+                pop.toggle();
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.note-icon-btn') && !e.target.closest('.popover')) {
+                    document.querySelectorAll('.note-icon-btn').forEach(btn => {
+                        const pop = bootstrap.Popover.getInstance(btn);
+                        if (pop) pop.hide();
+                    });
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        }
+
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-open');
+        }
+
+        function closeSidebar() {
+            document.body.classList.remove('sidebar-open');
+        }
+
+        function updateSearchClearButton(inputId) {
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(`${inputId}-clear`);
+            if (!input || !btn) return;
+            btn.style.visibility = input.value ? 'visible' : 'hidden';
+        }
+
+        function clearSearchBox(inputId, reloadFn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = '';
+            updateSearchClearButton(inputId);
+            if (typeof reloadFn === 'function') {
+                reloadFn();
+            }
+            input.focus();
+        }
+
+        function openTab(tabName) {
+            // Hide all sections
+            document.querySelectorAll('.tab-content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            const section = document.getElementById(tabName);
+            if (section) {
+                section.style.display = 'block';
+                
+                // Update page title
+                const titles = {
+                    'dashboard': 'Dashboard',
+                    'ips': 'All IPs',
+                    'tracked-devices': 'Tracked Devices',
+                    'network': 'Network Configuration',
+                    'vpn': 'VPN Management',
+                    'add-ip': 'Add New IP'
+                };
+                document.getElementById('page-title').textContent = titles[tabName] || 'Dashboard';
+                
+                // Load IPs table when switching to IPs tab
+                if (tabName === 'ips' && !dataTable) {
+                    setTimeout(() => {
+                        initDataTable();
+                        loadIPs();
+                    }, 100);
+                } else if (tabName === 'ips') {
+                    loadIPs();
+                }
+                
+                // Load network ranges when switching to network tab
+                if (tabName === 'network') {
+                    loadNetworkRanges();
+                }
+
+                // Load tracked devices when switching to tracked devices tab
+                if (tabName === 'tracked-devices') {
+                    loadTrackedDevices();
+                }
+                
+                // Load available ranges when switching to add-ip tab
+                if (tabName === 'add-ip') {
+                    loadAvailableRanges();
+                }
+            }
+        }
+
+        function loadDashboard() {
+            fetch('api/get_network_info.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.data.stats;
+                        document.getElementById('total-ips').textContent = stats.total_ips;
+                        document.getElementById('assigned-ips').textContent = stats.assigned_ips || 0;
+                        document.getElementById('available-ips').textContent = (stats.total_ips - (stats.assigned_ips || 0));
+                        document.getElementById('vpn-devices').textContent = stats.vpn_ips || 0;
+                        
+                        // Network overview
+                        const config = data.data.network_config;
+                        let html = `
+                            <div class="range-info">
+                                <div class="range-info-title">Router IP: ${config.router_ip}</div>
+                                <div class="range-info-detail">Netmask: ${config.network_netmask}</div>
+                                <div class="range-info-detail">Range: ${config.ip_range_start} - ${config.ip_range_end}</div>
+                                <div class="range-info-detail">DHCP: ${config.dhcp_range_start} - ${config.dhcp_range_end}</div>
+                                <div class="range-info-detail">DNS: ${config.dns_server}</div>
+                            </div>
+                        `;
+                        document.getElementById('network-overview').innerHTML = html;
+                    }
+                });
+
+            fetch('api/get_vpn_settings.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const vpn = data.data;
+                        let html = `
+                            <div class="range-info">
+                                <div class="range-info-title">${vpn.vpn_type} - ${vpn.vpn_provider}</div>
+                                <div class="range-info-detail">External IP: ${vpn.vpn_external_ip}</div>
+                                <div class="range-info-detail">Tunnel: ${vpn.vpn_tunnel_ip}/${vpn.vpn_tunnel_subnet.split('/')[1]}</div>
+                                <div class="range-info-detail">Port: ${vpn.vpn_port}</div>
+                            </div>
+                        `;
+                        document.getElementById('vpn-overview').innerHTML = html;
+                    }
+                });
+
+            // Load recent IPs
+            fetch('api/get_ips.php?sort=updated_at&sort_dir=desc&limit=5')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        let html = '<div class="ip-row"><strong>IP</strong> <strong>System</strong> <strong>Status</strong></div>';
+                        data.data.slice(0, 5).forEach(ip => {
+                            const status = Number(ip.is_assigned) === 1 ? '<span class="badge bg-success">Assigned</span>' : '<span class="badge bg-secondary">Available</span>';
+                            html += `<div class="ip-row"><span>${ip.ip}</span> <span>${ip.system || '-'}</span> ${status}</div>`;
+                        });
+                        document.getElementById('recent-ips').innerHTML = html;
+                    }
+                });
+        }
+
+        function initDataTable() {
+            if (dataTable) {
+                dataTable.destroy();
+            }
+            dataTable = $('#ips-table').DataTable({
+                paging: true,
+                pageLength: 25,
+                ordering: true,
+                order: [[0, 'asc']],
+                searching: false,
+                info: true,
+                lengthChange: true,
+                responsive: true,
+                columnDefs: [{
+                    targets: 0,
+                    render: function(data, type) {
+                        if (type === 'sort' || type === 'type') {
+                            // Strip HTML tags so only the raw IP string reaches the sorter
+                            const rawIP = String(data).replace(/<[^>]*>/g, '').trim();
+                            return ipToSortableValue(rawIP);
+                        }
+                        return data;
+                    }
+                }]
+            });
+        }
+
+        function ipToSortableValue(ip) {
+            const parts = String(ip).split('.').map(Number);
+            if (parts.length !== 4 || parts.some(p => Number.isNaN(p) || p < 0 || p > 255)) {
+                return Number.MAX_SAFE_INTEGER;
+            }
+            return ((parts[0] * 256 + parts[1]) * 256 + parts[2]) * 256 + parts[3];
+        }
+
+        function loadIPs() {
+            const search = document.getElementById('ip-search').value;
+            const category = document.getElementById('category-filter').value;
+            const status = document.getElementById('status-filter').value;
+            const vpn = document.getElementById('vpn-filter').value;
+
+            // Keep API sorting aligned with the current DataTables header sort.
+            let sort = 'ip';
+            let sortDir = 'asc';
+            if (dataTable) {
+                const order = dataTable.order();
+                if (order && order.length) {
+                    const sortMap = {
+                        0: 'ip',
+                        1: 'system',
+                        2: 'hostname',
+                        3: 'mac'
+                    };
+                    sort = sortMap[order[0][0]] || 'ip';
+                    sortDir = order[0][1] === 'desc' ? 'desc' : 'asc';
+                }
+            }
+
+            let url = 'api/get_ips.php?';
+            if (search) url += 'search=' + encodeURIComponent(search) + '&';
+            if (category) url += 'category=' + encodeURIComponent(category) + '&';
+            if (vpn === 'vpn') url += 'vpn_only=1&';
+            url += 'sort=' + encodeURIComponent(sort) + '&';
+            url += 'sort_dir=' + encodeURIComponent(sortDir) + '&';
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        let filteredData = data.data;
+                        
+                        // Apply status filter
+                        if (status === 'assigned') {
+                            filteredData = filteredData.filter(ip => Number(ip.is_assigned) === 1);
+                        } else if (status === 'available') {
+                            filteredData = filteredData.filter(ip => Number(ip.is_assigned) === 0);
+                        }
+
+                        latestIPsData = filteredData;
+                        populateIPTable(filteredData);
+                    }
+                });
+        }
+
+        function populateIPTable(ips) {
+            if (!dataTable) {
+                initDataTable();
+            }
+            
+            dataTable.clear();
+            ips.forEach(ip => {
+                const statusBadge = Number(ip.is_assigned) === 1 ? 
+                    '<span class="badge-status badge-assigned"><i class="fas fa-check-circle"></i> Assigned</span>' :
+                    '<span class="badge-status badge-available"><i class="fas fa-circle"></i> Available</span>';
+                const vpnBadge = Number(ip.behind_vpn) === 1 ? 
+                    '<span class="badge-status badge-vpn"><i class="fas fa-shield-alt"></i> VPN</span>' : '';
+                
+                const hasNote = Boolean(ip.notes && String(ip.notes).trim());
+                const encodedNote = hasNote ? encodeURIComponent(ip.notes) : '';
+                const noteIcon = hasNote
+                    ? `<button type="button" class="note-icon-btn" data-note="${encodedNote}" title="View note"><i class="fas fa-sticky-note"></i></button>`
+                    : '';
+                const ipCell = `<span class="ip-with-note"><span class="ip-link" onclick="editIP(${ip.id})">${ip.ip}</span>${noteIcon}</span>`;
+
+                dataTable.row.add([
+                    ipCell,
+                    ip.system || '-',
+                    ip.hostname || '-',
+                    ip.mac || '-',
+                    statusBadge,
+                    ip.category || 'Other',
+                    vpnBadge,
+                    `<div class="action-buttons">
+                        <button class="btn btn-sm btn-primary" onclick="editIP(${ip.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-info" onclick="copyIP('${ip.ip}')"><i class="fas fa-copy"></i></button>
+                    </div>`
+                ]);
+            });
+            dataTable.draw();
+        }
+
+        function editIP(id) {
+            fetch(`api/get_ip.php?id=${id}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const ip = data.data;
+                        currentEditId = id;
+                        document.getElementById('edit_id').value = id;
+                        document.getElementById('edit_ip').value = ip.ip;
+                        document.getElementById('edit_system').value = ip.system || '';
+                        document.getElementById('edit_hostname').value = ip.hostname || '';
+                        document.getElementById('edit_mac').value = ip.mac || '';
+                        document.getElementById('edit_category').value = ip.category || 'Other';
+                        document.getElementById('edit_notes').value = ip.notes || '';
+                        document.getElementById('edit_is_assigned').checked = Number(ip.is_assigned) === 1;
+                        document.getElementById('edit_behind_vpn').checked = Number(ip.behind_vpn) === 1;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                        modal.show();
+                    }
+                });
+        }
+
+        function saveEditIP() {
+            const data = {
+                id: parseInt(document.getElementById('edit_id').value),
+                ip: document.getElementById('edit_ip').value,
+                system: document.getElementById('edit_system').value,
+                hostname: document.getElementById('edit_hostname').value,
+                mac: document.getElementById('edit_mac').value,
+                category: document.getElementById('edit_category').value,
+                notes: document.getElementById('edit_notes').value,
+                is_assigned: document.getElementById('edit_is_assigned').checked ? 1 : 0,
+                behind_vpn: document.getElementById('edit_behind_vpn').checked ? 1 : 0
+            };
+
+            fetch('api/save_ip.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('IP updated successfully!', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                    loadIPs();
+                    loadDashboard();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            });
+        }
+
+        function deleteIP() {
+            if (confirm('Are you sure you want to delete this IP?')) {
+                fetch('api/delete_ip.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: parseInt(document.getElementById('edit_id').value) })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('IP deleted successfully!', 'success');
+                        bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                        loadIPs();
+                        loadDashboard();
+                    } else {
+                        showToast(data.message, 'error');
+                    }
+                });
+            }
+        }
+
+        function addNewIP() {
+            const ip = document.getElementById('add_ip').value;
+            if (!ip) {
+                showToast('Please enter an IP address', 'error');
+                return;
+            }
+
+            const data = {
+                ip: ip,
+                system: document.getElementById('add_system').value,
+                hostname: document.getElementById('add_hostname').value,
+                mac: document.getElementById('add_mac').value,
+                category: document.getElementById('add_category').value,
+                notes: document.getElementById('add_notes').value,
+                is_assigned: document.getElementById('add_is_assigned').checked ? 1 : 0,
+                behind_vpn: document.getElementById('add_behind_vpn').checked ? 1 : 0
+            };
+
+            fetch('api/save_ip.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('IP added successfully!', 'success');
+                    document.getElementById('add-ip-form').reset();
+                    // Switch to IPs tab
+                    const link = document.querySelector('[data-tab="ips"]');
+                    link.click();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            });
+        }
+
+        function loadNetworkInfo() {
+            fetch('api/get_network_info.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestNetworkInfo = data.data;
+                        const config = data.data.network_config;
+                        let html = `
+                            <div class="range-info">
+                                <div class="range-info-title">Router IP</div>
+                                <div class="range-info-detail">${config.router_ip}</div>
+                                <div class="range-info-title mt-3">Netmask</div>
+                                <div class="range-info-detail">${config.network_netmask}</div>
+                                <div class="range-info-title mt-3">IP Range</div>
+                                <div class="range-info-detail">${config.ip_range_start} - ${config.ip_range_end}</div>
+                                <div class="range-info-title mt-3">DHCP Range</div>
+                                <div class="range-info-detail">${config.dhcp_range_start} - ${config.dhcp_range_end}</div>
+                                <div class="range-info-title mt-3">DNS Server</div>
+                                <div class="range-info-detail">${config.dns_server}</div>
+                            </div>
+                        `;
+                        document.getElementById('network-details').innerHTML = html;
+                    }
+                });
+        }
+
+        function loadNetworkRanges() {
+            fetch('api/get_network_info.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestNetworkInfo = data.data;
+                        let html = '';
+                        data.data.ranges.forEach(range => {
+                            html += `
+                                <div class="range-info">
+                                    <div class="range-info-title">${range.range_name}</div>
+                                    <div class="range-info-detail"><strong>Category:</strong> ${range.category}</div>
+                                    <div class="range-info-detail"><strong>Range:</strong> ${range.range_start} - ${range.range_end}</div>
+                                    <div class="range-info-detail"><strong>Description:</strong> ${range.description || 'N/A'}</div>
+                                </div>
+                            `;
+                        });
+                        document.getElementById('network-ranges').innerHTML = html;
+                    }
+                });
+        }
+
+        function loadVPNSettings() {
+            fetch('api/get_vpn_settings.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        const vpn = data.data;
+                        document.getElementById('vpn_provider').value = vpn.vpn_provider;
+                        document.getElementById('vpn_external_ip').value = vpn.vpn_external_ip;
+                        document.getElementById('vpn_tunnel_ip').value = vpn.vpn_tunnel_ip;
+                        document.getElementById('vpn_tunnel_subnet').value = vpn.vpn_tunnel_subnet;
+                        document.getElementById('vpn_type').value = vpn.vpn_type;
+                        document.getElementById('vpn_port').value = vpn.vpn_port;
+                        
+                        // Load VPN devices
+                        loadVPNDevices();
+                    }
+                });
+        }
+
+        function saveVPNSettings() {
+            const data = {
+                vpn_provider: document.getElementById('vpn_provider').value,
+                vpn_external_ip: document.getElementById('vpn_external_ip').value,
+                vpn_tunnel_ip: document.getElementById('vpn_tunnel_ip').value,
+                vpn_tunnel_subnet: document.getElementById('vpn_tunnel_subnet').value,
+                vpn_type: document.getElementById('vpn_type').value,
+                vpn_port: parseInt(document.getElementById('vpn_port').value)
+            };
+
+            fetch('api/save_vpn_settings.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('VPN settings saved successfully!', 'success');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            });
+        }
+
+        function loadVPNDevices() {
+            fetch('api/get_vpn_devices.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestVPNDevicesData = Array.isArray(data.data) ? data.data : [];
+                        let html = '';
+                        if (data.data.length === 0) {
+                            html = '<p class="text-muted">No devices behind VPN</p>';
+                        } else {
+                            html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>IP</th><th>System</th><th>Hostname</th><th>MAC</th></tr></thead><tbody>';
+                            data.data.forEach(device => {
+                                html += `<tr><td>${device.ip}</td><td>${device.system || '-'}</td><td>${device.hostname || '-'}</td><td>${device.mac || '-'}</td></tr>`;
+                            });
+                            html += '</tbody></table></div>';
+                        }
+                        document.getElementById('vpn-devices-list').innerHTML = html;
+                    }
+                });
+        }
+
+        function loadAvailableRanges() {
+            fetch('api/get_network_info.php')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        let html = '';
+                        data.data.ranges.forEach(range => {
+                            html += `
+                                <div class="range-info">
+                                    <div class="range-info-title">${range.range_name}</div>
+                                    <div class="range-info-detail">${range.range_start} - ${range.range_end}</div>
+                                    <div class="range-info-detail">${range.description || 'N/A'}</div>
+                                </div>
+                            `;
+                        });
+                        document.getElementById('available-ranges').innerHTML = html;
+                    }
+                });
+        }
+
+        function loadTrackedDevices() {
+            const search = document.getElementById('tracked-search') ? document.getElementById('tracked-search').value : '';
+            const vpnFilter = document.getElementById('tracked-vpn-filter') ? document.getElementById('tracked-vpn-filter').value : '';
+
+            let url = 'api/get_tracked_devices.php?';
+            if (search) url += 'search=' + encodeURIComponent(search) + '&';
+            if (vpnFilter === 'vpn') url += 'vpn_only=1&';
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestTrackedDevicesData = Array.isArray(data.data) ? data.data : [];
+                        populateTrackedDevicesTable(data.data);
+                    } else {
+                        showToast(data.message || 'Failed to load tracked devices', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to load tracked devices', 'error'));
+        }
+
+        function populateTrackedDevicesTable(devices) {
+            const tbody = document.querySelector('#tracked-table tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!devices.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No tracked devices yet</td></tr>';
+                return;
+            }
+
+            devices.forEach(device => {
+                const vpnBadge = Number(device.behind_vpn) === 1
+                    ? '<span class="badge-status badge-vpn"><i class="fas fa-shield-alt"></i> VPN</span>'
+                    : '<span class="text-muted">No</span>';
+                const notePreview = device.notes && String(device.notes).trim()
+                    ? escapeHtml(String(device.notes).slice(0, 60)) + (String(device.notes).length > 60 ? '...' : '')
+                    : '<span class="text-muted">-</span>';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHtml(device.device_name || '-')}</td>
+                    <td>${escapeHtml(device.mac || '-')}</td>
+                    <td>${escapeHtml(device.current_ip || '-')}</td>
+                    <td>${vpnBadge}</td>
+                    <td>${notePreview}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="openTrackedDeviceModal(${device.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTrackedDevice(${device.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function openTrackedDeviceModal(id = null) {
+            const form = document.getElementById('tracked-device-form');
+            form.reset();
+            currentTrackedEditId = null;
+            document.getElementById('tracked_id').value = '';
+            document.getElementById('tracked-modal-title').textContent = 'Add Tracked Device';
+            document.getElementById('tracked-delete-btn').style.display = 'none';
+
+            if (id) {
+                fetch(`api/get_tracked_device.php?id=${id}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.success) {
+                            showToast(data.message || 'Failed to load tracked device', 'error');
+                            return;
+                        }
+
+                        const d = data.data;
+                        currentTrackedEditId = id;
+                        document.getElementById('tracked_id').value = id;
+                        document.getElementById('tracked_device_name').value = d.device_name || '';
+                        document.getElementById('tracked_mac').value = d.mac || '';
+                        document.getElementById('tracked_current_ip').value = d.current_ip || '';
+                        document.getElementById('tracked_behind_vpn').checked = Number(d.behind_vpn) === 1;
+                        document.getElementById('tracked_notes').value = d.notes || '';
+                        document.getElementById('tracked-modal-title').textContent = 'Edit Tracked Device';
+                        document.getElementById('tracked-delete-btn').style.display = 'inline-block';
+                    })
+                    .catch(() => showToast('Failed to load tracked device', 'error'));
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('trackedDeviceModal'));
+            modal.show();
+        }
+
+        function saveTrackedDevice() {
+            const deviceName = document.getElementById('tracked_device_name').value.trim();
+            const mac = document.getElementById('tracked_mac').value.trim();
+
+            if (!deviceName || !mac) {
+                showToast('Device name and MAC address are required', 'error');
+                return;
+            }
+
+            const payload = {
+                id: currentTrackedEditId ? Number(currentTrackedEditId) : 0,
+                device_name: deviceName,
+                mac: mac,
+                current_ip: document.getElementById('tracked_current_ip').value.trim(),
+                behind_vpn: document.getElementById('tracked_behind_vpn').checked ? 1 : 0,
+                notes: document.getElementById('tracked_notes').value
+            };
+
+            fetch('api/save_tracked_device.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(currentTrackedEditId ? 'Tracked device updated' : 'Tracked device added', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('trackedDeviceModal')).hide();
+                    loadTrackedDevices();
+                    loadVPNDevices();
+                } else {
+                    showToast(data.message || 'Save failed', 'error');
+                }
+            })
+            .catch(() => showToast('Save failed', 'error'));
+        }
+
+        function deleteTrackedDevice(id = null) {
+            const targetId = id || currentTrackedEditId;
+            if (!targetId) return;
+
+            if (!confirm('Delete this tracked device?')) {
+                return;
+            }
+
+            fetch('api/delete_tracked_device.php', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: Number(targetId) })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Tracked device deleted', 'success');
+                    const modalEl = document.getElementById('trackedDeviceModal');
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                    loadTrackedDevices();
+                    loadVPNDevices();
+                } else {
+                    showToast(data.message || 'Delete failed', 'error');
+                }
+            })
+            .catch(() => showToast('Delete failed', 'error'));
+        }
+
+        function copyIP(ip) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(ip).then(() => {
+                    showToast(`Copied: ${ip}`, 'success');
+                }).catch(() => fallbackCopy(ip));
+            } else {
+                fallbackCopy(ip);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast(`Copied: ${text}`, 'success');
+            } catch (e) {
+                showToast('Copy failed — please copy manually: ' + text, 'info');
+            }
+            document.body.removeChild(ta);
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show`;
+            toast.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function getExportTimestamp() {
+            return new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+        }
+
+        function toCSVCell(value) {
+            const text = value === null || value === undefined ? '' : String(value);
+            return `"${text.replace(/"/g, '""')}"`;
+        }
+
+        function csvFromRows(rows) {
+            return rows.map(row => row.map(toCSVCell).join(',')).join('\n');
+        }
+
+        function escapeMdCell(value) {
+            const text = value === null || value === undefined ? '' : String(value);
+            return text
+                .replace(/\|/g, '\\|')
+                .replace(/\n/g, '<br>');
+        }
+
+        function markdownTable(headers, rows) {
+            const head = `| ${headers.map(escapeMdCell).join(' | ')} |`;
+            const sep = `| ${headers.map(() => '---').join(' | ')} |`;
+            const body = rows.map(row => `| ${row.map(escapeMdCell).join(' | ')} |`).join('\n');
+            return `${head}\n${sep}${body ? `\n${body}` : ''}`;
+        }
+
+        function downloadFile(filename, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportIPsCSV() {
+            if (!latestIPsData.length) {
+                showToast('No IP records loaded to export yet', 'info');
+                return;
+            }
+
+            const rows = [
+                ['IP Address', 'System', 'Hostname', 'MAC Address', 'Status', 'Category', 'Behind VPN', 'Notes']
+            ];
+
+            latestIPsData.forEach(ip => {
+                rows.push([
+                    ip.ip || '',
+                    ip.system || '',
+                    ip.hostname || '',
+                    ip.mac || '',
+                    Number(ip.is_assigned) === 1 ? 'Assigned' : 'Available',
+                    ip.category || 'Other',
+                    Number(ip.behind_vpn) === 1 ? 'Yes' : 'No',
+                    ip.notes || ''
+                ]);
+            });
+
+            downloadFile(`all-ips-${getExportTimestamp()}.csv`, csvFromRows(rows), 'text/csv;charset=utf-8;');
+            showToast('All IPs CSV exported', 'success');
+        }
+
+        function exportIPsMarkdown() {
+            if (!latestIPsData.length) {
+                showToast('No IP records loaded to export yet', 'info');
+                return;
+            }
+
+            const headers = ['IP Address', 'System', 'Hostname', 'MAC Address', 'Status', 'Category', 'Behind VPN', 'Notes'];
+            const rows = latestIPsData.map(ip => ([
+                ip.ip || '',
+                ip.system || '',
+                ip.hostname || '',
+                ip.mac || '',
+                Number(ip.is_assigned) === 1 ? 'Assigned' : 'Available',
+                ip.category || 'Other',
+                Number(ip.behind_vpn) === 1 ? 'Yes' : 'No',
+                ip.notes || ''
+            ]));
+
+            const md = `# All IPs\n\nExported: ${new Date().toLocaleString()}\n\n${markdownTable(headers, rows)}\n`;
+            downloadFile(`all-ips-${getExportTimestamp()}.md`, md, 'text/markdown;charset=utf-8;');
+            showToast('All IPs Markdown exported', 'success');
+        }
+
+        function exportTrackedDevicesCSV() {
+            if (!latestTrackedDevicesData.length) {
+                showToast('No tracked devices loaded to export yet', 'info');
+                return;
+            }
+
+            const rows = [
+                ['Device Name', 'MAC Address', 'Current IP', 'Behind VPN', 'Notes', 'Created At', 'Updated At']
+            ];
+
+            latestTrackedDevicesData.forEach(device => {
+                rows.push([
+                    device.device_name || '',
+                    device.mac || '',
+                    device.current_ip || '',
+                    Number(device.behind_vpn) === 1 ? 'Yes' : 'No',
+                    device.notes || '',
+                    device.created_at || '',
+                    device.updated_at || ''
+                ]);
+            });
+
+            downloadFile(`tracked-devices-${getExportTimestamp()}.csv`, csvFromRows(rows), 'text/csv;charset=utf-8;');
+            showToast('Tracked devices CSV exported', 'success');
+        }
+
+        function exportTrackedDevicesMarkdown() {
+            if (!latestTrackedDevicesData.length) {
+                showToast('No tracked devices loaded to export yet', 'info');
+                return;
+            }
+
+            const headers = ['Device Name', 'MAC Address', 'Current IP', 'Behind VPN', 'Notes', 'Created At', 'Updated At'];
+            const rows = latestTrackedDevicesData.map(device => ([
+                device.device_name || '',
+                device.mac || '',
+                device.current_ip || '',
+                Number(device.behind_vpn) === 1 ? 'Yes' : 'No',
+                device.notes || '',
+                device.created_at || '',
+                device.updated_at || ''
+            ]));
+
+            const md = `# Tracked Devices\n\nExported: ${new Date().toLocaleString()}\n\n${markdownTable(headers, rows)}\n`;
+            downloadFile(`tracked-devices-${getExportTimestamp()}.md`, md, 'text/markdown;charset=utf-8;');
+            showToast('Tracked devices Markdown exported', 'success');
+        }
+
+        function exportNetworkConfigCSV() {
+            if (!latestNetworkInfo || !latestNetworkInfo.network_config) {
+                showToast('Network configuration is not loaded yet', 'info');
+                return;
+            }
+
+            const config = latestNetworkInfo.network_config;
+            const ranges = Array.isArray(latestNetworkInfo.ranges) ? latestNetworkInfo.ranges : [];
+            const rows = [
+                ['Section', 'Field', 'Value'],
+                ['Config', 'Router IP', config.router_ip || ''],
+                ['Config', 'Netmask', config.network_netmask || ''],
+                ['Config', 'IP Range Start', config.ip_range_start || ''],
+                ['Config', 'IP Range End', config.ip_range_end || ''],
+                ['Config', 'DHCP Range Start', config.dhcp_range_start || ''],
+                ['Config', 'DHCP Range End', config.dhcp_range_end || ''],
+                ['Config', 'DNS Server', config.dns_server || '']
+            ];
+
+            ranges.forEach(range => {
+                rows.push(['Range', range.range_name || '', `${range.range_start || ''} - ${range.range_end || ''}`]);
+                rows.push(['Range Category', range.range_name || '', range.category || '']);
+                rows.push(['Range Description', range.range_name || '', range.description || '']);
+            });
+
+            downloadFile(`network-config-${getExportTimestamp()}.csv`, csvFromRows(rows), 'text/csv;charset=utf-8;');
+            showToast('Network config CSV exported', 'success');
+        }
+
+        function exportNetworkConfigMarkdown() {
+            if (!latestNetworkInfo || !latestNetworkInfo.network_config) {
+                showToast('Network configuration is not loaded yet', 'info');
+                return;
+            }
+
+            const config = latestNetworkInfo.network_config;
+            const ranges = Array.isArray(latestNetworkInfo.ranges) ? latestNetworkInfo.ranges : [];
+
+            const configTable = markdownTable(
+                ['Setting', 'Value'],
+                [
+                    ['Router IP', config.router_ip || ''],
+                    ['Netmask', config.network_netmask || ''],
+                    ['IP Range Start', config.ip_range_start || ''],
+                    ['IP Range End', config.ip_range_end || ''],
+                    ['DHCP Range Start', config.dhcp_range_start || ''],
+                    ['DHCP Range End', config.dhcp_range_end || ''],
+                    ['DNS Server', config.dns_server || '']
+                ]
+            );
+
+            const rangesTable = markdownTable(
+                ['Range Name', 'Category', 'Range Start', 'Range End', 'Description'],
+                ranges.map(range => ([
+                    range.range_name || '',
+                    range.category || '',
+                    range.range_start || '',
+                    range.range_end || '',
+                    range.description || ''
+                ]))
+            );
+
+            const md = `# Network Configuration\n\nExported: ${new Date().toLocaleString()}\n\n## Settings\n\n${configTable}\n\n## Network Ranges\n\n${rangesTable}\n`;
+            downloadFile(`network-config-${getExportTimestamp()}.md`, md, 'text/markdown;charset=utf-8;');
+            showToast('Network config Markdown exported', 'success');
+        }
+
+        function exportVPNDevicesCSV() {
+            if (!latestVPNDevicesData.length) {
+                showToast('No VPN devices loaded to export yet', 'info');
+                return;
+            }
+
+            const rows = [['IP Address', 'System', 'Hostname', 'MAC Address']];
+            latestVPNDevicesData.forEach(device => {
+                rows.push([
+                    device.ip || '',
+                    device.system || '',
+                    device.hostname || '',
+                    device.mac || ''
+                ]);
+            });
+
+            downloadFile(`vpn-devices-${getExportTimestamp()}.csv`, csvFromRows(rows), 'text/csv;charset=utf-8;');
+            showToast('VPN devices CSV exported', 'success');
+        }
+
+        function exportVPNDevicesMarkdown() {
+            if (!latestVPNDevicesData.length) {
+                showToast('No VPN devices loaded to export yet', 'info');
+                return;
+            }
+
+            const headers = ['IP Address', 'System', 'Hostname', 'MAC Address'];
+            const rows = latestVPNDevicesData.map(device => ([
+                device.ip || '',
+                device.system || '',
+                device.hostname || '',
+                device.mac || ''
+            ]));
+
+            const md = `# Devices Behind VPN\n\nExported: ${new Date().toLocaleString()}\n\n${markdownTable(headers, rows)}\n`;
+            downloadFile(`vpn-devices-${getExportTimestamp()}.md`, md, 'text/markdown;charset=utf-8;');
+            showToast('VPN devices Markdown exported', 'success');
+        }
+
+        // Filter event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('ip-search');
+            if (searchInput) {
+                const debouncedLoadIPs = debounce(loadIPs, 500);
+                searchInput.addEventListener('keyup', () => {
+                    updateSearchClearButton('ip-search');
+                    debouncedLoadIPs();
+                });
+                searchInput.addEventListener('input', () => updateSearchClearButton('ip-search'));
+                updateSearchClearButton('ip-search');
+            }
+
+            const trackedSearch = document.getElementById('tracked-search');
+            if (trackedSearch) {
+                const debouncedLoadTrackedDevices = debounce(loadTrackedDevices, 400);
+                trackedSearch.addEventListener('keyup', () => {
+                    updateSearchClearButton('tracked-search');
+                    debouncedLoadTrackedDevices();
+                });
+                trackedSearch.addEventListener('input', () => updateSearchClearButton('tracked-search'));
+                updateSearchClearButton('tracked-search');
+            }
+
+            const trackedVpnFilter = document.getElementById('tracked-vpn-filter');
+            if (trackedVpnFilter) {
+                trackedVpnFilter.addEventListener('change', loadTrackedDevices);
+            }
+        });
+
+        function debounce(func, delay) {
+            let timeoutId;
+            return function(...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func(...args), delay);
+            };
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

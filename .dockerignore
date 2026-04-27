@@ -1,0 +1,6 @@
+# .dockerignore
+.github/
+templates/
+Chart.yaml
+values.yaml
+*.md
