@@ -60,8 +60,6 @@ if (!isset($authData['session']['sid'])) {
 
 $sid = $authData['session']['sid'];
 
-curl_close($ch);
-
 // -----------------------------
 // STEP 2: GET DNS ENTRIES
 // -----------------------------
@@ -85,8 +83,6 @@ if (curl_errno($ch)) {
 }
 
 $data = json_decode($response, true);
-
-curl_close($ch);
 
 if (!isset($data['config']['dns']['hosts'])) {
     die("Unexpected response: " . $response);
@@ -126,7 +122,7 @@ $pdo->beginTransaction();
 try {
 
     // --- Get existing DB entries ---
-    $stmt = $pdo->query("SELECT domain, ip, datecreated, dateupdated FROM pihole_dns_entries");
+    $stmt = $pdo->query("SELECT id, domain, ip, datecreated, dateupdated FROM pihole_dns_entries");
     $dbEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $dbDomains = [];
@@ -139,15 +135,18 @@ try {
 
     // --- Move deleted to history ---
     if (!empty($domainsToRemove)) {
+        $nextRemovedId = (int)$pdo->query("SELECT COALESCE(MAX(id), 0) + 1 FROM pihole_dns_removed")->fetchColumn();
+
         $insertHistory = $pdo->prepare("
-            INSERT INTO pihole_dns_removed (domain, ip, datecreated, dateupdated)
-            VALUES (:domain, :ip, :datecreated, :dateupdated)
+            INSERT INTO pihole_dns_removed (id, domain, ip, datecreated, dateupdated)
+            VALUES (:id, :domain, :ip, :datecreated, :dateupdated)
         ");
 
         foreach ($domainsToRemove as $domain) {
             $row = $dbDomains[$domain];
 
             $insertHistory->execute([
+                ':id' => $nextRemovedId++,
                 ':domain' => $row['domain'],
                 ':ip' => $row['ip'],
                 ':datecreated' => $row['datecreated'],
@@ -167,16 +166,32 @@ try {
     }
 
     // --- Upsert current entries ---
-    $upsert = $pdo->prepare("
-        INSERT INTO pihole_dns_entries (domain, ip)
-        VALUES (:domain, :ip)
-        ON DUPLICATE KEY UPDATE
-            ip = VALUES(ip),
-            dateupdated = CURRENT_TIMESTAMP
+    $findExisting = $pdo->prepare("SELECT id FROM pihole_dns_entries WHERE domain = :domain LIMIT 1");
+    $insertEntry = $pdo->prepare("
+        INSERT INTO pihole_dns_entries (id, domain, ip)
+        VALUES (:id, :domain, :ip)
     ");
+    $updateEntry = $pdo->prepare("
+        UPDATE pihole_dns_entries
+        SET ip = :ip, dateupdated = CURRENT_TIMESTAMP
+        WHERE id = :id
+    ");
+    $nextEntryId = (int)$pdo->query("SELECT COALESCE(MAX(id), 0) + 1 FROM pihole_dns_entries")->fetchColumn();
 
     foreach ($currentEntries as $domain => $ip) {
-        $upsert->execute([
+        $findExisting->execute([':domain' => $domain]);
+        $existingId = $findExisting->fetchColumn();
+
+        if ($existingId !== false) {
+            $updateEntry->execute([
+                ':id' => $existingId,
+                ':ip' => $ip
+            ]);
+            continue;
+        }
+
+        $insertEntry->execute([
+            ':id' => $nextEntryId++,
             ':domain' => $domain,
             ':ip' => $ip
         ]);
