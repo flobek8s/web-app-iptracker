@@ -24,4 +24,4 @@ RUN chown -R www-data:www-data /var/www/html \
     && touch /var/log/cron.log
 
 EXPOSE 80
-CMD ["sh", "-c", "printenv | sed 's/^\\([^=]*\\)=\\(.*\\)$/export \\1=\\"\\2\\"/' > /etc/profile.d/container_env.sh && cron && apache2-foreground"]
+CMD printenv | sed 's/^\([^=]*\)=\(.*\)$/export \1="\2"/' > /etc/profile.d/container_env.sh && cron && apache2-foreground
