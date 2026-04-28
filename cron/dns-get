@@ -1,2 +1,2 @@
-*/5 * * * * /usr/local/bin/php /var/www/html/dns_pihole_get.php > /dev/null 2>&1
+*/5 * * * * . /etc/profile.d/container_env.sh; /usr/local/bin/php /var/www/html/dns_pihole_get.php >> /var/log/cron.log 2>&1
 

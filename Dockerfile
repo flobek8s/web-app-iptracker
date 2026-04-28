@@ -20,7 +20,8 @@ COPY cron/dns-get /etc/cron.d/dns-get
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod 0644 /etc/cron.d/dns-get \
-    && crontab /etc/cron.d/dns-get
+    && crontab /etc/cron.d/dns-get \
+    && touch /var/log/cron.log
 
 EXPOSE 80
-CMD ["sh", "-c", "cron && apache2-foreground"]
+CMD ["sh", "-c", "printenv | sed 's/^\\([^=]*\\)=\\(.*\\)$/export \\1=\\"\\2\\"/' > /etc/profile.d/container_env.sh && cron && apache2-foreground"]
