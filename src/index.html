@@ -499,7 +499,10 @@
             }
 
             #ips-table,
-            #tracked-table {
+            #tracked-table,
+            #k8s-ingress-table,
+            #pihole-entries-table,
+            #pihole-removed-table {
                 min-width: 820px;
             }
         }
@@ -518,8 +521,149 @@
             }
 
             #ips-table,
-            #tracked-table {
+            #tracked-table,
+            #k8s-ingress-table,
+            #pihole-entries-table,
+            #pihole-removed-table {
                 min-width: 760px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .card-header .row.align-items-center {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch !important;
+                margin-left: 0;
+                margin-right: 0;
+                row-gap: 10px;
+            }
+
+            .card-header .row.align-items-center > [class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            .card-header .text-md-end {
+                text-align: left !important;
+            }
+
+            .card-header .search-box,
+            .card-header .form-select,
+            .card-header .btn-group,
+            .card-header .d-inline-flex {
+                width: 100%;
+            }
+
+            .card-header .btn-group > .btn,
+            .card-header .btn.btn-light,
+            .card-header .btn-custom {
+                width: 100%;
+            }
+
+            .card-header .btn,
+            .card-header .btn-group > .btn,
+            .card-header .form-select,
+            .card-header .search-box input {
+                min-height: 40px;
+            }
+
+            .card-header .d-inline-flex {
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 8px !important;
+            }
+
+            .card-header .d-inline-flex > .btn,
+            .card-header .d-inline-flex > .btn-group,
+            .card-header .btn-group > .btn {
+                flex: 1 1 auto;
+            }
+
+            .card-header .dropdown-menu-end {
+                right: auto;
+                left: 0;
+            }
+
+            .card-header.d-flex {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 10px;
+            }
+
+            .card-header.d-flex > .d-flex {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start !important;
+                gap: 8px;
+            }
+
+            .card-header.d-flex > span,
+            .card-header.d-flex > div,
+            .card-header.d-flex > .d-flex {
+                width: 100%;
+            }
+
+            .card-header .dropdown-menu {
+                min-width: 100%;
+            }
+
+            .card-header .row.header-search-inline {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                align-items: center !important;
+                gap: 8px;
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .card-header .row.header-search-inline > [class*="col-"] {
+                padding-left: 0;
+                padding-right: 0;
+                max-width: none;
+            }
+
+            .card-header .row.header-search-inline > [class*="col-"]:first-child {
+                flex: 0 0 auto;
+                width: auto;
+                min-width: 0;
+            }
+
+            .card-header .row.header-search-inline > [class*="col-"]:last-child {
+                flex: 1 1 auto;
+                width: auto;
+                min-width: 0;
+            }
+
+            .card-header .row.header-search-inline .toolbar-title {
+                display: inline-block;
+                max-width: 38vw;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                vertical-align: middle;
+            }
+
+            .card-header .row.header-search-inline .search-box {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .card-header .row.header-search-inline .search-box input {
+                height: 38px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-top {
+                justify-content: flex-start;
+            }
+
+            .navbar-top > div:last-child {
+                display: none;
             }
         }
 
@@ -564,6 +708,9 @@
             <li><a href="#dashboard" class="nav-link active" data-tab="dashboard"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
             <li><a href="#ips" class="nav-link" data-tab="ips"><i class="fas fa-list"></i> <span>All IPs</span></a></li>
             <li><a href="#tracked-devices" class="nav-link" data-tab="tracked-devices"><i class="fas fa-laptop-house"></i> <span>Tracked Devices</span></a></li>
+            <li><a href="#k8s-ingress-dns" class="nav-link" data-tab="k8s-ingress-dns"><i class="fas fa-cloud"></i> <span>K8s Ingress DNS</span></a></li>
+            <li><a href="#pihole-dns-entries" class="nav-link" data-tab="pihole-dns-entries"><i class="fas fa-server"></i> <span>Pi-hole DNS Entries</span></a></li>
+            <li><a href="#pihole-dns-removed" class="nav-link" data-tab="pihole-dns-removed"><i class="fas fa-trash-alt"></i> <span>Pi-hole DNS Removed</span></a></li>
             <li><a href="#network" class="nav-link" data-tab="network"><i class="fas fa-sitemap"></i> <span>Network Config</span></a></li>
             <li><a href="#vpn" class="nav-link" data-tab="vpn"><i class="fas fa-shield-alt"></i> <span>VPN</span></a></li>
             <li><a href="#add-ip" class="nav-link" data-tab="add-ip"><i class="fas fa-plus-circle"></i> <span>Add IP</span></a></li>
@@ -590,28 +737,40 @@
         <div id="dashboard" class="tab-content-section">
             <!-- Statistics Cards -->
             <div class="row mb-4">
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <div class="stat-card">
                         <div class="stat-number" id="total-ips">0</div>
                         <div class="stat-label">Total IPs</div>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <div class="stat-card">
                         <div class="stat-number" id="assigned-ips" style="color: #28a745;">0</div>
                         <div class="stat-label">Assigned IPs</div>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <div class="stat-card">
                         <div class="stat-number" id="available-ips" style="color: #ffc107;">0</div>
                         <div class="stat-label">Available IPs</div>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <div class="stat-card">
                         <div class="stat-number" id="vpn-devices" style="color: #0dcaf0;">0</div>
                         <div class="stat-label">VPN Devices</div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-number" id="k8s-ingress-count" style="color: #6f42c1;">0</div>
+                        <div class="stat-label">K8s Ingress DNS</div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-number" id="pihole-dns-entries-count" style="color: #fd7e14;">0</div>
+                        <div class="stat-label">Pi-hole DNS Entries</div>
                     </div>
                 </div>
             </div>
@@ -784,6 +943,115 @@
                                     <th>VPN</th>
                                     <th>Notes</th>
                                     <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- K8s Ingress DNS Tab -->
+        <div id="k8s-ingress-dns" class="tab-content-section" style="display:none;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center g-2 header-search-inline">
+                        <div class="col-lg-4 col-md-5">
+                            <span class="toolbar-title"><i class="fas fa-cloud"></i> Kubernetes Ingress DNS</span>
+                        </div>
+                        <div class="col-lg-8 col-md-7">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="k8s-ingress-search" class="form-control" placeholder="Search namespace, ingress, domain, service, IP...">
+                                <button class="search-clear-btn" id="k8s-ingress-search-clear" type="button" aria-label="Clear Kubernetes ingress DNS search" onclick="clearSearchBox('k8s-ingress-search', loadK8sIngressDNS)">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="k8s-ingress-table" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Namespace</th>
+                                    <th>Ingress</th>
+                                    <th>Domain</th>
+                                    <th>Service</th>
+                                    <th>IP</th>
+                                    <th>Last Seen</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pi-hole DNS Entries Tab -->
+        <div id="pihole-dns-entries" class="tab-content-section" style="display:none;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center g-2 header-search-inline">
+                        <div class="col-lg-4 col-md-5">
+                            <span class="toolbar-title"><i class="fas fa-server"></i> Pi-hole DNS Entries</span>
+                        </div>
+                        <div class="col-lg-8 col-md-7">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="pihole-entries-search" class="form-control" placeholder="Search domain, IP, created, updated...">
+                                <button class="search-clear-btn" id="pihole-entries-search-clear" type="button" aria-label="Clear Pi-hole DNS entries search" onclick="clearSearchBox('pihole-entries-search', loadPiholeDNSEntries)">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="pihole-entries-table" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>IP</th>
+                                    <th>Created</th>
+                                    <th>Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pi-hole DNS Removed Tab -->
+        <div id="pihole-dns-removed" class="tab-content-section" style="display:none;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center g-2 header-search-inline">
+                        <div class="col-lg-4 col-md-5">
+                            <span class="toolbar-title"><i class="fas fa-trash-alt"></i> Pi-hole DNS Removed</span>
+                        </div>
+                        <div class="col-lg-8 col-md-7">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="pihole-removed-search" class="form-control" placeholder="Search domain, IP, created, removed...">
+                                <button class="search-clear-btn" id="pihole-removed-search-clear" type="button" aria-label="Clear removed Pi-hole DNS search" onclick="clearSearchBox('pihole-removed-search', loadPiholeDNSRemoved)">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="pihole-removed-table" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>IP</th>
+                                    <th>Created</th>
+                                    <th>Updated</th>
+                                    <th>Removed</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -1096,6 +1364,9 @@
         let latestTrackedDevicesData = [];
         let latestNetworkInfo = null;
         let latestVPNDevicesData = [];
+        let latestK8sIngressData = [];
+        let latestPiholeEntriesData = [];
+        let latestPiholeRemovedData = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -1211,6 +1482,9 @@
                     'dashboard': 'Dashboard',
                     'ips': 'All IPs',
                     'tracked-devices': 'Tracked Devices',
+                    'k8s-ingress-dns': 'K8s Ingress DNS',
+                    'pihole-dns-entries': 'Pi-hole DNS Entries',
+                    'pihole-dns-removed': 'Pi-hole DNS Removed',
                     'network': 'Network Configuration',
                     'vpn': 'VPN Management',
                     'add-ip': 'Add New IP'
@@ -1236,6 +1510,18 @@
                 if (tabName === 'tracked-devices') {
                     loadTrackedDevices();
                 }
+
+                if (tabName === 'k8s-ingress-dns') {
+                    loadK8sIngressDNS();
+                }
+
+                if (tabName === 'pihole-dns-entries') {
+                    loadPiholeDNSEntries();
+                }
+
+                if (tabName === 'pihole-dns-removed') {
+                    loadPiholeDNSRemoved();
+                }
                 
                 // Load available ranges when switching to add-ip tab
                 if (tabName === 'add-ip') {
@@ -1254,6 +1540,8 @@
                         document.getElementById('assigned-ips').textContent = stats.assigned_ips || 0;
                         document.getElementById('available-ips').textContent = (stats.total_ips - (stats.assigned_ips || 0));
                         document.getElementById('vpn-devices').textContent = stats.vpn_ips || 0;
+                        document.getElementById('k8s-ingress-count').textContent = stats.k8s_ingress_count || 0;
+                        document.getElementById('pihole-dns-entries-count').textContent = stats.pihole_dns_entries_count || 0;
                         
                         // Network overview
                         const config = data.data.network_config;
@@ -1687,6 +1975,133 @@
                     }
                 })
                 .catch(() => showToast('Failed to load tracked devices', 'error'));
+        }
+
+        function loadK8sIngressDNS() {
+            const search = document.getElementById('k8s-ingress-search') ? document.getElementById('k8s-ingress-search').value : '';
+            let url = 'api/get_k8s_ingress_dns.php?';
+            if (search) url += 'search=' + encodeURIComponent(search) + '&';
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestK8sIngressData = Array.isArray(data.data) ? data.data : [];
+                        populateK8sIngressTable(latestK8sIngressData);
+                    } else {
+                        showToast(data.message || 'Failed to load Kubernetes ingress DNS', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to load Kubernetes ingress DNS', 'error'));
+        }
+
+        function populateK8sIngressTable(records) {
+            const tbody = document.querySelector('#k8s-ingress-table tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!records.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No Kubernetes ingress DNS records found</td></tr>';
+                return;
+            }
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHtml(record.namespace || '-')}</td>
+                    <td>${escapeHtml(record.ingress_name || '-')}</td>
+                    <td>${escapeHtml(record.domain || '-')}</td>
+                    <td>${escapeHtml(record.service || '-')}</td>
+                    <td>${escapeHtml(record.ip || '-')}</td>
+                    <td>${escapeHtml(record.last_seen || '-')}</td>
+                    <td>${escapeHtml(record.datecreated || '-')}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function loadPiholeDNSEntries() {
+            const search = document.getElementById('pihole-entries-search') ? document.getElementById('pihole-entries-search').value : '';
+            let url = 'api/get_pihole_dns_entries.php?';
+            if (search) url += 'search=' + encodeURIComponent(search) + '&';
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestPiholeEntriesData = Array.isArray(data.data) ? data.data : [];
+                        populatePiholeEntriesTable(latestPiholeEntriesData);
+                    } else {
+                        showToast(data.message || 'Failed to load Pi-hole DNS entries', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to load Pi-hole DNS entries', 'error'));
+        }
+
+        function populatePiholeEntriesTable(records) {
+            const tbody = document.querySelector('#pihole-entries-table tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!records.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No Pi-hole DNS entries found</td></tr>';
+                return;
+            }
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHtml(record.domain || '-')}</td>
+                    <td>${escapeHtml(record.ip || '-')}</td>
+                    <td>${escapeHtml(record.datecreated || '-')}</td>
+                    <td>${escapeHtml(record.dateupdated || '-')}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function loadPiholeDNSRemoved() {
+            const search = document.getElementById('pihole-removed-search') ? document.getElementById('pihole-removed-search').value : '';
+            let url = 'api/get_pihole_dns_removed.php?';
+            if (search) url += 'search=' + encodeURIComponent(search) + '&';
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestPiholeRemovedData = Array.isArray(data.data) ? data.data : [];
+                        populatePiholeRemovedTable(latestPiholeRemovedData);
+                    } else {
+                        showToast(data.message || 'Failed to load removed Pi-hole DNS entries', 'error');
+                    }
+                })
+                .catch(() => showToast('Failed to load removed Pi-hole DNS entries', 'error'));
+        }
+
+        function populatePiholeRemovedTable(records) {
+            const tbody = document.querySelector('#pihole-removed-table tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!records.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No removed Pi-hole DNS entries found</td></tr>';
+                return;
+            }
+
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHtml(record.domain || '-')}</td>
+                    <td>${escapeHtml(record.ip || '-')}</td>
+                    <td>${escapeHtml(record.datecreated || '-')}</td>
+                    <td>${escapeHtml(record.dateupdated || '-')}</td>
+                    <td>${escapeHtml(record.dateremoved || '-')}</td>
+                `;
+                tbody.appendChild(row);
+            });
         }
 
         function populateTrackedDevicesTable(devices) {
@@ -2131,6 +2546,39 @@
             const trackedVpnFilter = document.getElementById('tracked-vpn-filter');
             if (trackedVpnFilter) {
                 trackedVpnFilter.addEventListener('change', loadTrackedDevices);
+            }
+
+            const k8sIngressSearch = document.getElementById('k8s-ingress-search');
+            if (k8sIngressSearch) {
+                const debouncedLoadK8sIngressDNS = debounce(loadK8sIngressDNS, 400);
+                k8sIngressSearch.addEventListener('keyup', () => {
+                    updateSearchClearButton('k8s-ingress-search');
+                    debouncedLoadK8sIngressDNS();
+                });
+                k8sIngressSearch.addEventListener('input', () => updateSearchClearButton('k8s-ingress-search'));
+                updateSearchClearButton('k8s-ingress-search');
+            }
+
+            const piholeEntriesSearch = document.getElementById('pihole-entries-search');
+            if (piholeEntriesSearch) {
+                const debouncedLoadPiholeDNSEntries = debounce(loadPiholeDNSEntries, 400);
+                piholeEntriesSearch.addEventListener('keyup', () => {
+                    updateSearchClearButton('pihole-entries-search');
+                    debouncedLoadPiholeDNSEntries();
+                });
+                piholeEntriesSearch.addEventListener('input', () => updateSearchClearButton('pihole-entries-search'));
+                updateSearchClearButton('pihole-entries-search');
+            }
+
+            const piholeRemovedSearch = document.getElementById('pihole-removed-search');
+            if (piholeRemovedSearch) {
+                const debouncedLoadPiholeDNSRemoved = debounce(loadPiholeDNSRemoved, 400);
+                piholeRemovedSearch.addEventListener('keyup', () => {
+                    updateSearchClearButton('pihole-removed-search');
+                    debouncedLoadPiholeDNSRemoved();
+                });
+                piholeRemovedSearch.addEventListener('input', () => updateSearchClearButton('pihole-removed-search'));
+                updateSearchClearButton('pihole-removed-search');
             }
         });
 
