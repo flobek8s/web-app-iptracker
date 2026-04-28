@@ -7,12 +7,12 @@ $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : 
 $sort = isset($_GET['sort']) ? $conn->real_escape_string($_GET['sort']) : 'last_seen';
 $sort_dir = isset($_GET['sort_dir']) && $_GET['sort_dir'] === 'asc' ? 'ASC' : 'DESC';
 
-$valid_sorts = ['namespace', 'ingress_name', 'domain', 'service', 'ip', 'last_seen', 'datecreated'];
+$valid_sorts = ['namespace', 'ingress_name', 'domain', 'service', 'ip', 'type', 'last_seen', 'datecreated'];
 if (!in_array($sort, $valid_sorts, true)) {
     $sort = 'last_seen';
 }
 
-$query = "SELECT id, namespace, ingress_name, domain, service, ip, last_seen, datecreated FROM k8s_ingress_dns WHERE 1=1";
+$query = "SELECT id, namespace, ingress_name, domain, service, ip, type, last_seen, datecreated FROM k8s_ingress_dns WHERE 1=1";
 
 if ($search) {
     $query .= " AND ("
@@ -22,6 +22,7 @@ if ($search) {
         . " OR domain LIKE '%$search%'"
         . " OR service LIKE '%$search%'"
         . " OR ip LIKE '%$search%'"
+        . " OR type LIKE '%$search%'"
         . " OR last_seen LIKE '%$search%'"
         . " OR datecreated LIKE '%$search%'"
         . ")";
