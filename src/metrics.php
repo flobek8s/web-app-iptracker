@@ -3,15 +3,10 @@
 
 header('Content-Type: text/plain; version=0.0.4; charset=utf-8');
 
-define('DB_HOST', '192.168.20.27');
-define('DB_USER', 'root');
-define('DB_PASS', 'champ20');
-define('DB_NAME', 'ip_tracker');
-
-$dbHost = DB_HOST;
-$dbUser = DB_USER;
-$dbPass = DB_PASS;
-$dbName = DB_NAME;
+$dbHost = $_ENV['mysql_host'];
+$dbUser = $_ENV['mysql_user'];
+$dbPass = $_ENV['mysql_pass'];
+$dbName = $_ENV['mysql_db'];
 
 $metrics = [];
 $conn = null;
