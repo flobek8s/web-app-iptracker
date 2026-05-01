@@ -500,6 +500,7 @@
 
             #ips-table,
             #tracked-table,
+            #unifi-device-state-table,
             #k8s-ingress-table,
             #pihole-entries-table,
             #pihole-removed-table {
@@ -522,6 +523,7 @@
 
             #ips-table,
             #tracked-table,
+            #unifi-device-state-table,
             #k8s-ingress-table,
             #pihole-entries-table,
             #pihole-removed-table {
@@ -708,6 +710,7 @@
             <li><a href="#dashboard" class="nav-link active" data-tab="dashboard"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
             <li><a href="#ips" class="nav-link" data-tab="ips"><i class="fas fa-list"></i> <span>All IPs</span></a></li>
             <li><a href="#tracked-devices" class="nav-link" data-tab="tracked-devices"><i class="fas fa-laptop-house"></i> <span>Tracked Devices</span></a></li>
+            <li><a href="#unifi-device-state" class="nav-link" data-tab="unifi-device-state"><i class="fas fa-wifi"></i> <span>Unifi Devices</span></a></li>
             <li><a href="#k8s-ingress-dns" class="nav-link" data-tab="k8s-ingress-dns"><i class="fas fa-cloud"></i> <span>K8s Ingress DNS</span></a></li>
             <li><a href="#pihole-dns-entries" class="nav-link" data-tab="pihole-dns-entries"><i class="fas fa-server"></i> <span>Pi-hole DNS Entries</span></a></li>
             <li><a href="#pihole-dns-removed" class="nav-link" data-tab="pihole-dns-removed"><i class="fas fa-trash-alt"></i> <span>Pi-hole DNS Removed</span></a></li>
@@ -780,7 +783,7 @@
                 <div class="col-lg-6">
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-router"></i> Network Configuration
+                            <i class="fas fa-network-wired"></i> Network Configuration
                         </div>
                         <div class="card-body">
                             <div id="network-overview"></div>
@@ -794,6 +797,29 @@
                         </div>
                         <div class="card-body">
                             <div id="vpn-overview"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-wifi"></i> Unifi Configuration
+                        </div>
+                        <div class="card-body">
+                            <div id="unifi-overview"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-satellite-dish"></i> Starlink Configuration
+                        </div>
+                        <div class="card-body">
+                            <div id="starlink-overview"></div>
                         </div>
                     </div>
                 </div>
@@ -952,6 +978,53 @@
             </div>
         </div>
 
+        <!-- Unifi Device State Tab -->
+        <div id="unifi-device-state" class="tab-content-section" style="display:none;">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center g-2 header-search-inline">
+                        <div class="col-lg-3 col-md-4">
+                            <span class="toolbar-title"><i class="fas fa-wifi"></i> Unifi Device State</span>
+                        </div>
+                        <div class="col-lg-6 col-md-8">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="unifi-device-state-search" class="form-control" placeholder="Search display name, MAC, IP, VPN, status...">
+                                <button class="search-clear-btn" id="unifi-device-state-search-clear" type="button" aria-label="Clear Unifi device state search" onclick="clearSearchBox('unifi-device-state-search', loadUnifiDeviceState)">&times;</button>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-12 text-md-end">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-file-export"></i> Export
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><button class="dropdown-item" type="button" onclick="exportUnifiDeviceStateCSV()"><i class="fas fa-file-csv me-2"></i>CSV</button></li>
+                                    <li><button class="dropdown-item" type="button" onclick="exportUnifiDeviceStateMarkdown()"><i class="fas fa-file-lines me-2"></i>Markdown</button></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="unifi-device-state-table" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Display Name</th>
+                                    <th>MAC</th>
+                                    <th>IP</th>
+                                    <th>VPN</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- K8s Ingress DNS Tab -->
         <div id="k8s-ingress-dns" class="tab-content-section" style="display:none;">
             <div class="card">
@@ -979,7 +1052,6 @@
                                     <th>Domain</th>
                                     <th>Service</th>
                                     <th>IP</th>
-                                    <th>Type</th>
                                     <th>Last Seen</th>
                                     <th>Created</th>
                                 </tr>
@@ -1368,6 +1440,7 @@
         let latestK8sIngressData = [];
         let latestPiholeEntriesData = [];
         let latestPiholeRemovedData = [];
+        let latestUnifiDeviceStateData = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -1483,6 +1556,7 @@
                     'dashboard': 'Dashboard',
                     'ips': 'All IPs',
                     'tracked-devices': 'Tracked Devices',
+                    'unifi-device-state': 'Unifi Devices',
                     'k8s-ingress-dns': 'K8s Ingress DNS',
                     'pihole-dns-entries': 'Pi-hole DNS Entries',
                     'pihole-dns-removed': 'Pi-hole DNS Removed',
@@ -1510,6 +1584,10 @@
                 // Load tracked devices when switching to tracked devices tab
                 if (tabName === 'tracked-devices') {
                     loadTrackedDevices();
+                }
+
+                if (tabName === 'unifi-device-state') {
+                    loadUnifiDeviceState();
                 }
 
                 if (tabName === 'k8s-ingress-dns') {
@@ -1574,6 +1652,74 @@
                         `;
                         document.getElementById('vpn-overview').innerHTML = html;
                     }
+                });
+
+            fetch('api/get_unifi_state.php')
+                .then(r => r.json())
+                .then(data => {
+                    const target = document.getElementById('unifi-overview');
+                    if (!target) return;
+
+                    if (!data.success || !data.data) {
+                        target.innerHTML = '<p class="text-muted mb-0">No Unifi configuration data found</p>';
+                        return;
+                    }
+
+                    const unifi = data.data;
+                    let html = `
+                        <div class="range-info">
+                            <div class="range-info-title">${escapeHtml(unifi.name || '-')}</div>
+                            <div class="range-info-detail">Network: ${escapeHtml(unifi.network_name || '-')}</div>
+                            <div class="range-info-detail">Version: ${escapeHtml(unifi.network_version || '-')}</div>
+                            <div class="range-info-detail">UDM Display Version: ${escapeHtml(unifi.udm_display_version || '-')}</div>
+                            <div class="range-info-detail">Subnet: ${escapeHtml(unifi.ip_subnet || '-')}</div>
+                            <div class="range-info-detail">DHCP: ${escapeHtml(unifi.dhcp_start || '-')} - ${escapeHtml(unifi.dhcp_stop || '-')}</div>
+                            <div class="range-info-title mt-3">VPN</div>
+                            <div class="range-info-detail">VPN Name: ${escapeHtml(unifi.vpn_name || '-')}</div>
+                            <div class="range-info-detail">VPN Type: ${escapeHtml(unifi.vpn_type || '-')}</div>
+                            <div class="range-info-detail">VPN IP: ${escapeHtml(unifi.vpn_ip || '-')}</div>
+                            <div class="range-info-detail">Target Count: ${escapeHtml(unifi.target_count ?? '-')}</div>
+                            <div class="range-info-detail">Updated: ${escapeHtml(formatDateTime(unifi.updated))}</div>
+                        </div>
+                    `;
+                    target.innerHTML = html;
+                })
+                .catch(() => {
+                    const target = document.getElementById('unifi-overview');
+                    if (target) target.innerHTML = '<p class="text-muted mb-0">No Unifi configuration data found</p>';
+                });
+
+            fetch('api/get_starlink_state.php')
+                .then(r => r.json())
+                .then(data => {
+                    const target = document.getElementById('starlink-overview');
+                    if (!target) return;
+
+                    if (!data.success || !data.data) {
+                        target.innerHTML = '<p class="text-muted mb-0">No Starlink configuration data found</p>';
+                        return;
+                    }
+
+                    const starlink = data.data;
+                    let html = `
+                        <div class="range-info">
+                            <div class="range-info-title">${escapeHtml(starlink.isp || '-')}</div>
+                            <div class="range-info-detail">City: ${escapeHtml(starlink.city || '-')}</div>
+                            <div class="range-info-detail">Software Version: ${escapeHtml(starlink.software_version || '-')}</div>
+                            <div class="range-info-detail">Boot Count: ${escapeHtml(starlink.boot_count ?? '-')}</div>
+                            <div class="range-info-detail">Uptime: ${escapeHtml(formatUptime(starlink.uptime_seconds))}</div>
+                            <div class="range-info-detail">POP Ping Latency: ${escapeHtml(starlink.pop_ping_latency ?? '-')} ms</div>
+                            <div class="range-info-detail">Obstruction: ${escapeHtml(starlink.obstruction_percent ?? '-')}%</div>
+                            <div class="range-info-detail">Public IP: ${escapeHtml(starlink.public_ip || '-')}</div>
+                            <div class="range-info-detail">Monthly Data Usage: ${escapeHtml(starlink.monthly_data_usage_tb ?? '-')} TB</div>
+                            <div class="range-info-detail">Updated: ${escapeHtml(formatDateTime(starlink.updated_at))}</div>
+                        </div>
+                    `;
+                    target.innerHTML = html;
+                })
+                .catch(() => {
+                    const target = document.getElementById('starlink-overview');
+                    if (target) target.innerHTML = '<p class="text-muted mb-0">No Starlink configuration data found</p>';
                 });
 
             // Load recent IPs
@@ -1978,6 +2124,58 @@
                 .catch(() => showToast('Failed to load tracked devices', 'error'));
         }
 
+        function loadUnifiDeviceState() {
+            const search = document.getElementById('unifi-device-state-search') ? document.getElementById('unifi-device-state-search').value : '';
+            let url = 'api/get_unifi_device_state.php?';
+            if (search) url += 'search=' + encodeURIComponent(search) + '&';
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        latestUnifiDeviceStateData = Array.isArray(data.data) ? data.data : [];
+                        populateUnifiDeviceStateTable(latestUnifiDeviceStateData);
+                    } else {
+                        showToast(data.message || 'Failed to load Unifi device state', 'error');
+                        latestUnifiDeviceStateData = [];
+                        populateUnifiDeviceStateTable([]);
+                    }
+                })
+                .catch(() => {
+                    showToast('Failed to load Unifi device state', 'error');
+                    latestUnifiDeviceStateData = [];
+                    populateUnifiDeviceStateTable([]);
+                });
+        }
+
+        function populateUnifiDeviceStateTable(records) {
+            const tbody = document.querySelector('#unifi-device-state-table tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (!records.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No Unifi device state records found</td></tr>';
+                return;
+            }
+
+            records.forEach(record => {
+                const vpnBadge = Number(record.is_vpn) === 1
+                    ? '<span class="badge-status badge-vpn"><i class="fas fa-shield-alt"></i> VPN</span>'
+                    : '<span class="text-muted">No</span>';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHtml(record.display_name || '-')}</td>
+                    <td>${escapeHtml(record.mac || '-')}</td>
+                    <td>${escapeHtml(record.ip || '-')}</td>
+                    <td>${vpnBadge}</td>
+                    <td>${escapeHtml(record.status || '-')}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
         function loadK8sIngressDNS() {
             const search = document.getElementById('k8s-ingress-search') ? document.getElementById('k8s-ingress-search').value : '';
             let url = 'api/get_k8s_ingress_dns.php?';
@@ -2015,7 +2213,6 @@
                     <td>${escapeHtml(record.domain || '-')}</td>
                     <td>${escapeHtml(record.service || '-')}</td>
                     <td>${escapeHtml(record.ip || '-')}</td>
-                    <td>${escapeHtml(record.type || '-')}</td>
                     <td>${escapeHtml(record.last_seen || '-')}</td>
                     <td>${escapeHtml(record.datecreated || '-')}</td>
                 `;
@@ -2415,6 +2612,50 @@
             showToast('Tracked devices Markdown exported', 'success');
         }
 
+        function exportUnifiDeviceStateCSV() {
+            if (!latestUnifiDeviceStateData.length) {
+                showToast('No Unifi device state records loaded to export yet', 'info');
+                return;
+            }
+
+            const rows = [
+                ['Display Name', 'MAC', 'IP', 'Is VPN', 'Status']
+            ];
+
+            latestUnifiDeviceStateData.forEach(device => {
+                rows.push([
+                    device.display_name || '',
+                    device.mac || '',
+                    device.ip || '',
+                    Number(device.is_vpn) === 1 ? 'Yes' : 'No',
+                    device.status || ''
+                ]);
+            });
+
+            downloadFile(`unifi-device-state-${getExportTimestamp()}.csv`, csvFromRows(rows), 'text/csv;charset=utf-8;');
+            showToast('Unifi device state CSV exported', 'success');
+        }
+
+        function exportUnifiDeviceStateMarkdown() {
+            if (!latestUnifiDeviceStateData.length) {
+                showToast('No Unifi device state records loaded to export yet', 'info');
+                return;
+            }
+
+            const headers = ['Display Name', 'MAC', 'IP', 'Is VPN', 'Status'];
+            const rows = latestUnifiDeviceStateData.map(device => ([
+                device.display_name || '',
+                device.mac || '',
+                device.ip || '',
+                Number(device.is_vpn) === 1 ? 'Yes' : 'No',
+                device.status || ''
+            ]));
+
+            const md = `# Unifi Device State\n\nExported: ${new Date().toLocaleString()}\n\n${markdownTable(headers, rows)}\n`;
+            downloadFile(`unifi-device-state-${getExportTimestamp()}.md`, md, 'text/markdown;charset=utf-8;');
+            showToast('Unifi device state Markdown exported', 'success');
+        }
+
         function exportNetworkConfigCSV() {
             if (!latestNetworkInfo || !latestNetworkInfo.network_config) {
                 showToast('Network configuration is not loaded yet', 'info');
@@ -2550,6 +2791,17 @@
                 trackedVpnFilter.addEventListener('change', loadTrackedDevices);
             }
 
+            const unifiDeviceStateSearch = document.getElementById('unifi-device-state-search');
+            if (unifiDeviceStateSearch) {
+                const debouncedLoadUnifiDeviceState = debounce(loadUnifiDeviceState, 400);
+                unifiDeviceStateSearch.addEventListener('keyup', () => {
+                    updateSearchClearButton('unifi-device-state-search');
+                    debouncedLoadUnifiDeviceState();
+                });
+                unifiDeviceStateSearch.addEventListener('input', () => updateSearchClearButton('unifi-device-state-search'));
+                updateSearchClearButton('unifi-device-state-search');
+            }
+
             const k8sIngressSearch = document.getElementById('k8s-ingress-search');
             if (k8sIngressSearch) {
                 const debouncedLoadK8sIngressDNS = debounce(loadK8sIngressDNS, 400);
@@ -2590,6 +2842,28 @@
                 clearTimeout(timeoutId);
                 timeoutId = setTimeout(() => func(...args), delay);
             };
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '-';
+            const parsed = new Date(value);
+            if (Number.isNaN(parsed.getTime())) return String(value);
+            return parsed.toLocaleString();
+        }
+
+        function formatUptime(secondsValue) {
+            const seconds = Number(secondsValue);
+            if (!Number.isFinite(seconds) || seconds < 0) return '-';
+
+            const totalMinutes = Math.floor(seconds / 60);
+            const days = Math.floor(totalMinutes / (24 * 60));
+            const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+            const minutes = totalMinutes % 60;
+
+            const dayLabel = days === 1 ? 'day' : 'days';
+            const hourLabel = hours === 1 ? 'hour' : 'hours';
+            const minuteLabel = minutes === 1 ? 'minute' : 'minutes';
+            return `${days} ${dayLabel}, ${hours} ${hourLabel}, ${minutes} ${minuteLabel}`;
         }
 
         function escapeHtml(text) {
