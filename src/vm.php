@@ -1108,10 +1108,15 @@ async function loadVMs() {
   const SC = {running:'s-running',stopped:'s-stopped',unknown:'s-unknown'};
   const TC = {qemu:'t-qemu',lxc:'t-lxc',template:'t-template'};
   // const syn = r => r.last_synced ? `<br><span style="font-size:10px;color:var(--dim)">synced ${r.last_synced.split(' ')[0]}</span>` : '';
-  const dt = new Date(r.last_synced.replace(' ', 'T') + 'Z');
-  return `<br><span style="font-size:10px;color:var(--dim)">
-    synced ${dt.toLocaleString()}
-  </span>`;
+  const syn = r => {
+    if (!r.last_synced) return '';
+
+    const dt = new Date(r.last_synced.replace(' ', 'T') + 'Z');
+
+    return `<br><span style="font-size:10px;color:var(--dim)">
+      synced ${dt.toLocaleString()}
+    </span>`;
+  };
 
 
   body.innerHTML = rows.map(r => `
