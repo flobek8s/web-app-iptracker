@@ -17,3 +17,10 @@ ingress:
   enabled: true
   host: iptracker.phink8s.com
   secretName: wildcard-phink8s.com-tls
+
+# CronJob settings
+cron:
+  enabled: true
+  # schedule: "*/15 * * * *"     # Every 15 minutes
+  schedule: "0 */1 * * *"    # Every hour (example)
+  ntfyTopic: "pbs"    # Change to your ntfy topic
