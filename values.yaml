@@ -21,6 +21,7 @@ ingress:
 # CronJob settings
 cron:
   enabled: true
+  baseUrl: https://iptracker.phink8s.com/vm.php
   # schedule: "*/15 * * * *"     # Every 15 minutes
   schedule: "0 * * * *"    # Every hour (example)
   ntfyTopic: "pbs"    # Change to your ntfy topic
