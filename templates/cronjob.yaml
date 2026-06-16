@@ -22,12 +22,8 @@ spec:
             image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
             imagePullPolicy: {{ .Values.image.pullPolicy }}
             command:
-            - sh
-            - -c
-            - |
-                echo "Testing internal connectivity..."
-                curl -v -m 10 http://{{ .Values.service.service }}.{{ .Values.namespace }}.svc.cluster.local/vm.php?action=host_list
-                php /var/www/html/vm_cron_sync.php
+            - php
+            - /var/www/html/vm_cron_sync.php
             env:
             - name: BASE_URL
               value: {{ .Values.cron.baseUrl | quote }}
