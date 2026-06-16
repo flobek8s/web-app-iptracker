@@ -25,6 +25,7 @@ function post($action, $data = []) {
 
     echo "POST $action → HTTP $httpCode\n";
     if ($error) echo "Curl error: $error\n";
+    echo "Raw response:\n$response\n";
 
     return [
         'success' => $httpCode === 200,
@@ -92,5 +93,4 @@ function send_ntfy($title, $message) {
     ]);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_exec($ch);
-    curl_close($ch);
 }
