@@ -1,12 +1,12 @@
 <?php
 // ================================================
 //  Proxmox VM Manager - Cron Sync Script
-//  Run via cron: php /path/to/sync-cron.php
+//  Run via cron: php /path/to/vm_cron_sync.php
 // ================================================
 //https://ntfy.lewisanalytix.com/
 // define('BASE_URL', 'http://192.168.20.44/vm-checker/vm.php'); // ← Change if needed
 // define('NTFY_TOPIC', 'pbs'); // ← Change to your ntfy topic
-define('BASE_URL', getenv('BASE_URL') ?: 'http://127.0.0.1');
+define('BASE_URL', getenv('BASE_URL') ?: 'http://127.0.0.1/vm.php');
 define('NTFY_TOPIC', getenv('NTFY_TOPIC') ?: 'pbs');
 
 function post($action, $data = []) {

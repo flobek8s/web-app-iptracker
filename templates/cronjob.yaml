@@ -26,7 +26,7 @@ spec:
             - /var/www/html/vm_cron_sync.php
             env:
             - name: BASE_URL
-              value: "http://{{ .Values.service.service }}.{{ .Values.namespace }}.svc.cluster.local"
+              value: "http://{{ .Values.service.service }}.{{ .Values.namespace }}.svc.cluster.local/vm.php"
             - name: NTFY_TOPIC
               value: {{ .Values.cron.ntfyTopic | quote }}
             resources:
