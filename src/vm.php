@@ -32,7 +32,7 @@ function pve_get(string $url, array $hdrs, bool $verify): array|false {
     ]);
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+
     if ($code !== 200) return false;
     return json_decode($body, true)['data'] ?? false;
 }
@@ -52,7 +52,7 @@ function pve_post(string $url, array $hdrs, bool $verify, array $fields = []): a
     ]);
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+  
     // Proxmox agent/ping returns 200 with {"data":{}} on success,
     // or 500 if agent not running — treat anything non-200 as failure
     if ($code !== 200) return null;
