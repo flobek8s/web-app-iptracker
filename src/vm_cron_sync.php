@@ -9,6 +9,9 @@
 define('BASE_URL', getenv('BASE_URL') ?: 'http://127.0.0.1/vm.php');
 define('NTFY_TOPIC', getenv('NTFY_TOPIC') ?: 'pbs');
 
+echo "=== Sync started at " . date('Y-m-d H:i:s') . " ===\n";
+echo "BASE_URL = " . BASE_URL . "\n";
+
 function post($action, $data = []) {
     $ch = curl_init(BASE_URL);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -18,7 +21,11 @@ function post($action, $data = []) {
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 12);
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error    = curl_error($ch);
     curl_close($ch);
+
+    echo "POST $action → HTTP $httpCode\n";
+    if ($error) echo "Curl error: $error\n";
 
     return [
         'success' => $httpCode === 200,
