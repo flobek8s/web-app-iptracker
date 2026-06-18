@@ -8,6 +8,9 @@ define('DB_HOST', $_ENV['mysql_host']);
 define('DB_USER', $_ENV['mysql_user']);
 define('DB_PASS', $_ENV['mysql_pass']);
 define('DB_NAME', $_ENV['mysql_db']);
+define('APP_VERSION', getenv('app_version') ?: 'Unknown');
+define('APP_NAME', getenv('app_name') ?: 'Application');
+define('APP_COPYRIGHT', getenv('app_copyright') ?: '');
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
@@ -283,15 +286,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $node   = $nodes[0]['node'] ?? $host['hostname'] ?? 'localhost';
         $synced = 0;
 
-        $upsert_vm = function(int $vmid, string $name, string $type, string $status, ?string $mac) use ($host_id, $db) {
+        $upsert_vm = function(int $vmid, string $name, string $type, string $status, ?string $vm_ip, ?string $mac) use ($host_id, $db) {
             $st = $db->prepare(
-                "INSERT INTO vms (vm_id,host_id,name,vm_type,status,mac,last_synced)
-                 VALUES (?,?,?,?,?,?,NOW())
+                "INSERT INTO vms (vm_id,host_id,name,ip,vm_type,status,mac,last_synced)
+                 VALUES (?,?,?,?,?,?,?,NOW())
                  ON DUPLICATE KEY UPDATE
                    name=VALUES(name), status=VALUES(status), vm_type=VALUES(vm_type),
+                   ip=COALESCE(VALUES(ip),ip),
                    mac=COALESCE(VALUES(mac),mac), last_synced=NOW()"
             );
-            $st->bind_param('iissss', $vmid, $host_id, $name, $type, $status, $mac);
+            $st->bind_param('iisssss', $vmid, $host_id, $name, $vm_ip, $type, $status, $mac);
             $st->execute();
         };
 
@@ -301,7 +305,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $vmid = (int)($vm['vmid'] ?? 0);
                 if ($vmid === 0) continue;
                 $status = in_array($vm['status'] ?? '', ['running','stopped']) ? $vm['status'] : 'unknown';
-                $type   = stripos($vm['name'] ?? '', 'emplate') !== false ? 'template' : 'qemu';
+                // $type   = stripos($vm['name'] ?? '', 'template') !== false ? 'template' : 'qemu';
+                $type = (($vm['template'] ?? null) == 1) ? 'template' : 'qemu';
 
                 $cfg = pve_get("$base/nodes/$node/qemu/$vmid/config", $headers, $verify) ?? [];
                 $mac = null;
@@ -311,7 +316,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         break;
                     }
                 }
-                $upsert_vm($vmid, $vm['name'] ?? "VM-$vmid", $type, $status, $mac);
+                //Get VM IP
+                $ni_raw = pve_get("$base/nodes/$node/qemu/$vmid/agent/network-get-interfaces", $headers, $verify);
+                $vm_ip = null;
+
+                if ($ni_raw) {
+                    $items = $ni_raw['data']['result'] ?? $ni_raw['result'] ?? $ni_raw; 
+
+                    if (is_array($items)) {
+                        foreach ($items as $iface) {
+                            if (($iface['name'] ?? '') === 'lo') continue;
+
+                            foreach ($iface['ip-addresses'] ?? [] as $ip) {
+                                $ip_address = $ip['ip-address'] ?? '';
+                                $ip_type = $ip['ip-address-type'] ?? '';
+
+                                // Capture only the 192.168.x.x IPv4 address
+                                if ($ip_type === 'ipv4' && str_starts_with($ip_address, '192.168.')) {
+                                    $vm_ip = $ip_address;
+                                    break 2; // Found it! Stop processing immediately.
+                                }
+                            }
+                        }
+                    }
+                }
+                $upsert_vm($vmid, $vm['name'] ?? "VM-$vmid", $type, $status, $vm_ip, $mac);
                 $synced++;
             }
 
@@ -328,7 +357,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         break;
                     }
                 }
-                $upsert_vm($vmid, $ct['name'] ?? "CT-$vmid", 'lxc', $status, $mac);
+                //Get LXC IP
+                $ni_raw = pve_get("$base/nodes/$node/lxc/$vmid/interfaces", $headers, $verify);
+                $vm_ip = null;
+
+                if ($ni_raw) {
+                    $items = $ni_raw['data'] ?? $ni_raw; 
+
+                    if (is_array($items)) {
+                        foreach ($items as $iface) {
+                            if (($iface['name'] ?? '') === 'lo') continue;
+
+                            foreach ($iface['ip-addresses'] ?? [] as $ip) {
+                                $ip_address = $ip['ip-address'] ?? '';
+                                $ip_type = $ip['ip-address-type'] ?? '';
+
+                                // Proxmox LXC uses 'inet' to denote an IPv4 address
+                                if ($ip_type === 'inet' && str_starts_with($ip_address, '192.168.')) {
+                                    $vm_ip = $ip_address;
+                                    break 2; // Found it! Stop processing immediately.
+                                }
+                            }
+                        }
+                    }
+                }
+                $upsert_vm($vmid, $ct['name'] ?? "CT-$vmid", 'lxc', $status, $vm_ip, $mac);
                 $synced++;
             }
         } else {
@@ -693,6 +746,7 @@ $host_filter_opts = implode('', array_map(fn($h)=>"<option value=\"{$h['name']}\
   --purple:   #bc8cff;
   --text:     #c9d1d9;
   --dim:      #8b949e;
+  --footer:   #a072f5;
   --r:        6px;
   --mono:     'JetBrains Mono','Cascadia Code','Fira Mono',monospace;
   --sans:     'Inter',system-ui,sans-serif;
@@ -770,6 +824,7 @@ tr.dup-row td{background:rgba(210,153,34,.06)}
 .tk-no{background:var(--red)}
 .act-btns{display:flex;gap:6px}
 .row-count{font-size:12px;color:var(--dim);text-align:right;margin-top:6px}
+.footer{font-size:12px;color:var(--footer);text-align:center;margin-top:6px}
 .empty,.loading{text-align:center;padding:40px;color:var(--dim)}
 
 /* Modal */
@@ -892,6 +947,8 @@ textarea.fc{resize:vertical;min-height:60px}
     </table>
   </div>
   <div class="row-count" id="vmCount"></div>
+  <div class="footer"><?= htmlspecialchars(APP_NAME) ?> v<?= htmlspecialchars(APP_VERSION) ?></div>
+  <div class="footer">&copy; <?= date('Y') ?> <?= htmlspecialchars(APP_COPYRIGHT) ?>. All Rights Reserved</div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
@@ -903,6 +960,8 @@ textarea.fc{resize:vertical;min-height:60px}
     <button class="btn btn-secondary" onclick="openHostModal()">+ Add Host</button>
   </div>
   <div class="host-grid" id="hostGrid"><div class="loading">Loading…</div></div>
+  <div class="footer"><?= htmlspecialchars(APP_NAME) ?> v<?= htmlspecialchars(APP_VERSION) ?></div>
+  <div class="footer">&copy; <?= date('Y') ?> <?= htmlspecialchars(APP_COPYRIGHT) ?>. All Rights Reserved</div>
 </div>
 
 <!-- ══ VM Modal ══════════════════════════════════════════════ -->

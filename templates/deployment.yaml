@@ -28,6 +28,13 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.port }}
+          env:
+            - name: app_version
+              value: {{ .Chart.AppVersion | quote }}
+            - name: app_name
+              value: {{ .Values.PVEManager.name | quote }}
+            - name: app_copyright
+              value: {{ .Values.PVEManager.copyright | quote }}
           envFrom:
             - secretRef:
                 name: {{ .Values.secretsName }}

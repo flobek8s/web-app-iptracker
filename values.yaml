@@ -25,3 +25,7 @@ cron:
   # schedule: "*/15 * * * *"     # Every 15 minutes
   schedule: "0 * * * *"    # Every hour (example)
   ntfyTopic: "pbs"    # Change to your ntfy topic
+
+PVEManager:
+  name: PVEMgr
+  copyright: Phink8s
