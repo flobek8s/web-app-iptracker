@@ -4,10 +4,10 @@
 //  Single-file PHP — requires PHP 8.0+, MySQLi, cURL
 // ============================================================
 
-define('DB_HOST', env_value('mysql_host'));
-define('DB_USER', env_value('mysql_user'));
-define('DB_PASS', env_value('mysql_pass'));
-define('DB_NAME', env_value('mysql_db'));
+define('DB_HOST', $_ENV['mysql_host']);
+define('DB_USER', $_ENV['mysql_user']);
+define('DB_PASS', $_ENV['mysql_pass']);
+define('DB_NAME', $_ENV['mysql_db']);
 define('APP_VERSION', getenv('app_version') ?: 'Unknown');
 define('APP_NAME', getenv('app_name') ?: 'Application');
 define('APP_COPYRIGHT', getenv('app_copyright') ?: '');
