@@ -4,13 +4,42 @@
 //  Single-file PHP — requires PHP 8.0+, MySQLi, cURL
 // ============================================================
 
-define('DB_HOST', $_ENV['mysql_host']);
-define('DB_USER', $_ENV['mysql_user']);
-define('DB_PASS', $_ENV['mysql_pass']);
-define('DB_NAME', $_ENV['mysql_db']);
+function env_value(string $key, string $default = ''): string {
+  $value = getenv($key);
+  if ($value === false || $value === '') {
+    $value = $_ENV[$key] ?? $_SERVER[$key] ?? $default;
+  }
+  return (string)$value;
+}
+
+define('DB_HOST', env_value('mysql_host'));
+define('DB_USER', env_value('mysql_user'));
+define('DB_PASS', env_value('mysql_pass'));
+define('DB_NAME', env_value('mysql_db'));
 define('APP_VERSION', getenv('app_version') ?: 'Unknown');
 define('APP_NAME', getenv('app_name') ?: 'Application');
 define('APP_COPYRIGHT', getenv('app_copyright') ?: '');
+
+$is_ajax_post = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']);
+if ($is_ajax_post) {
+  // Keep API responses JSON-only even when PHP emits warnings/notices in production.
+  ini_set('display_errors', '0');
+  ini_set('html_errors', '0');
+
+  set_error_handler(static function (int $severity, string $message, string $file, int $line): bool {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+  });
+
+  set_exception_handler(static function (Throwable $e): void {
+    error_log('vm.php AJAX error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) {
+      http_response_code(500);
+      header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode(['ok' => false, 'msg' => 'Server error. Check PHP logs.']);
+    exit;
+  });
+}
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
@@ -1277,8 +1306,13 @@ async function post(fields) {
       console.error('HTTP error', r.status);
       return { ok: false, msg: `HTTP ${r.status}` };
     }
-    const json = await r.json();
-    return json;
+    const raw = await r.text();
+    try {
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error('Invalid JSON response:', raw.slice(0, 500));
+      return { ok: false, msg: 'Server returned invalid JSON. Check PHP logs.' };
+    }
   } catch (err) {
     console.error('Fetch error:', err);
     return { ok: false, msg: 'Network error' };
