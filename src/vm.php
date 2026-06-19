@@ -460,8 +460,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $verify = (bool)$host['verify_ssl'];
 
         $nodes = [];
-        $node_list = pve_get("$base/nodes", $headers, $verify) ?? [];
+        $node_list = pve_get("$base/nodes", $headers, $verify);
+        if (!is_array($node_list)) $node_list = [];
         foreach ($node_list as $n) {
+          if (!is_array($n)) continue;
           $nname = trim((string)($n['node'] ?? ''));
           if ($nname !== '') $nodes[] = $nname;
         }
