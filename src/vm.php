@@ -62,6 +62,24 @@ function pve_post(string $url, array $hdrs, bool $verify, array $fields = []): a
     return json_decode($body, true)['data'] ?? [];
 }
 
+  //*** v0.0.3
+  // HTTP-only health probe: returns the raw HTTP status code for an endpoint.
+  function pve_http_code(string $url, array $hdrs, bool $verify): int {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_HTTPHEADER     => $hdrs,
+      CURLOPT_SSL_VERIFYPEER => $verify,
+      CURLOPT_SSL_VERIFYHOST => $verify ? 2 : 0,
+      CURLOPT_TIMEOUT        => 10,
+    ]);
+    curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $code;
+  }
+  //***END v0.0.3
+
 // ── AJAX ─────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $db  = db();
@@ -89,9 +107,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $st->execute();
         $rows = $st->get_result()->fetch_all(MYSQLI_ASSOC);
         // flag duplicate VMIDs across fleet
+        //*** v0.0.3
+        // flag duplicate VMIDs across fleet, excluding templates
         $cnt = [];
-        foreach ($rows as $r) $cnt[$r['vm_id']] = ($cnt[$r['vm_id']] ?? 0) + 1;
-        foreach ($rows as &$r) $r['dup'] = $cnt[$r['vm_id']] > 1;
+        foreach ($rows as $r) {
+          if (($r['vm_type'] ?? '') === 'template') continue;
+          $cnt[$r['vm_id']] = ($cnt[$r['vm_id']] ?? 0) + 1;
+        }
+        foreach ($rows as &$r) {
+          $r['dup'] = (($r['vm_type'] ?? '') !== 'template') && (($cnt[$r['vm_id']] ?? 0) > 1);
+        }
+        //*** END v0.0.3
         unset($r);
         json_out(['ok'=>true,'rows'=>$rows]);
     }
@@ -405,6 +431,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         json_out(['ok'=>true,'hosts'=>$rows]);
     }
 
+    //*** v0.0.3
+    // ── Node: running status (HTTP 200 means running) ───────
+    if ($act === 'node_status_list') {
+      $hosts = $db->query(
+        "SELECT id,name,hostname,api_port,api_token,verify_ssl FROM proxmox_hosts ORDER BY name"
+      )->fetch_all(MYSQLI_ASSOC);
+
+      $rows = [];
+      foreach ($hosts as $host) {
+        $port = (int)($host['api_port'] ?? 8006);
+        $is_pbs = ($port === 8007);
+        $token = trim((string)($host['api_token'] ?? ''));
+
+        if ($token === '') {
+          $rows[] = [
+            'host'      => $host['name'],
+            'node'      => $host['hostname'] ?: $host['name'],
+            'running'   => false,
+            'http_code' => 0,
+            'msg'       => 'No token',
+          ];
+          continue;
+        }
+
+        $base = "https://{$host['hostname']}:{$port}/api2/json";
+        $token_prefix = $is_pbs ? 'PBSAPIToken' : 'PVEAPIToken';
+        $headers = ["Authorization: $token_prefix={$token}"];
+        $verify = (bool)$host['verify_ssl'];
+
+        $nodes = [];
+        $node_list = pve_get("$base/nodes", $headers, $verify) ?? [];
+        foreach ($node_list as $n) {
+          $nname = trim((string)($n['node'] ?? ''));
+          if ($nname !== '') $nodes[] = $nname;
+        }
+
+        if (!empty($nodes)) {
+          foreach ($nodes as $node) {
+            $code = pve_http_code("$base/nodes/" . rawurlencode($node) . "/status", $headers, $verify);
+            $rows[] = [
+              'host'      => $host['name'],
+              'node'      => $node,
+              'running'   => ($code === 200),
+              'http_code' => $code,
+              'msg'       => $code === 200 ? 'Running' : 'Not running',
+            ];
+          }
+          continue;
+        }
+
+        // PBS (or restricted tokens) may not return /nodes; probe likely node names.
+        $candidates = [];
+        foreach ([$host['hostname'] ?? '', $host['name'] ?? '', 'localhost'] as $cand) {
+          $cand = trim((string)$cand);
+          if ($cand !== '' && !in_array($cand, $candidates, true)) $candidates[] = $cand;
+        }
+
+        $matched = false;
+        $first_code = 0;
+        $first_node = $candidates[0] ?? 'unknown';
+        foreach ($candidates as $idx => $node) {
+          $code = pve_http_code("$base/nodes/" . rawurlencode($node) . "/status", $headers, $verify);
+          if ($idx === 0) {
+            $first_code = $code;
+            $first_node = $node;
+          }
+          if ($code === 200) {
+            $rows[] = [
+              'host'      => $host['name'],
+              'node'      => $node,
+              'running'   => true,
+              'http_code' => 200,
+              'msg'       => 'Running',
+            ];
+            $matched = true;
+            break;
+          }
+        }
+
+        if (!$matched) {
+          $rows[] = [
+            'host'      => $host['name'],
+            'node'      => $first_node,
+            'running'   => false,
+            'http_code' => $first_code,
+            'msg'       => 'Not running',
+          ];
+        }
+      }
+
+      json_out(['ok'=>true, 'rows'=>$rows]);
+    }
+    //***END v0.0.3
 
     // ── VM: info panel (live from Proxmox API) ─────────────────
     if ($act === 'vm_info') {
@@ -688,6 +807,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             $out['networks'] = $nets;
 
+            //*** v0.0.3
+            // Use live LXC interfaces API for popup network info (same endpoint used in sync).
+            $ni_raw = pve_get("$base/nodes/$node/lxc/$vmid/interfaces", $headers, $verify);
+            if ($ni_raw) {
+              $ifaces = [];
+              $items = $ni_raw['data'] ?? $ni_raw;
+              if (is_array($items)) {
+                foreach ($items as $iface) {
+                  if (($iface['name'] ?? '') === 'lo') continue;
+                  $ips = [];
+
+                  foreach (($iface['ip-addresses'] ?? []) as $ip) {
+                    $ip_addr = (string)($ip['ip-address'] ?? $ip['address'] ?? '');
+                    if ($ip_addr === '') continue;
+                    $prefix = $ip['prefix'] ?? $ip['netmask'] ?? null;
+                    $ips[] = ($prefix !== null && $prefix !== '') ? ($ip_addr . '/' . $prefix) : $ip_addr;
+                  }
+
+                  if (empty($ips) && !empty($iface['inet']) && is_array($iface['inet'])) {
+                    foreach ($iface['inet'] as $ip_addr) {
+                      if ($ip_addr !== '') $ips[] = (string)$ip_addr;
+                    }
+                  }
+
+                  $ifaces[] = [
+                    'name' => $iface['name'] ?? '',
+                    'mac'  => strtolower((string)($iface['hwaddr'] ?? $iface['hardware-address'] ?? '')),
+                    'ips'  => $ips,
+                  ];
+                }
+              }
+
+              if (!empty($ifaces)) {
+                $out['agent_data']['interfaces'] = $ifaces;
+              }
+            }
+            //****END v0.0.3
+
             // LXC mounts
             $disks = [];
             foreach ($cfg as $k => $v) {
@@ -772,6 +929,14 @@ header{background:var(--surf);border-bottom:1px solid var(--border);padding:0 24
 .stat{display:flex;flex-direction:column;gap:2px}
 .stat-val{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--accent)}
 .stat-lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+/* //*** v0.0.3 */
+.node-status-row{display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px;background:var(--surf2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px}
+.node-stat{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surf);border:1px solid var(--border);border-radius:var(--r)}
+.node-stat-name{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.node-chip-state{font-weight:700;font-size:14px;line-height:1}
+.node-chip-up{color:var(--green)}
+.node-chip-down{color:var(--red)}
+/* //***END v0.0.3 */
 
 /* Toolbar */
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
@@ -910,6 +1075,12 @@ textarea.fc{resize:vertical;min-height:60px}
     <div class="stat"><span class="stat-val" style="color:var(--dim)" id="st-tmpl">–</span><span class="stat-lbl">Templates</span></div>
     <div class="stat"><span class="stat-val" style="color:var(--yellow)" id="st-dup">–</span><span class="stat-lbl">Dup VMIDs</span></div>
   </div>
+
+  <!-- //*** v0.0.3 -->
+  <div class="node-status-row" id="nodeStatusRow">
+    <span class="mono-sm">Checking node status…</span>
+  </div>
+  <!-- //***END v0.0.3 -->
 
   <div class="toolbar">
     <div class="search-wrap">
@@ -1162,6 +1333,10 @@ async function loadVMs() {
   document.getElementById('st-dup').textContent   = dupIds.length;
   document.getElementById('vmCount').textContent  = `${rows.length} record${rows.length!==1?'s':''}`;
 
+  //*** v0.0.3
+  await loadNodeStatuses();
+  //***END v0.0.3
+
   if (!rows.length) { body.innerHTML='<tr><td colspan="9" class="empty">No VMs found.</td></tr>'; return; }
 
   const SC = {running:'s-running',stopped:'s-stopped',unknown:'s-unknown'};
@@ -1194,6 +1369,35 @@ async function loadVMs() {
       </div></td>
     </tr>`).join('');
 }
+
+//*** v0.0.3
+async function loadNodeStatuses() {
+  const row = document.getElementById('nodeStatusRow');
+  if (!row) return;
+
+  row.innerHTML = '<span class="mono-sm">Checking node status…</span>';
+  const data = await post({ action: 'node_status_list' });
+
+  if (!data.ok || !Array.isArray(data.rows)) {
+    row.innerHTML = '<span class="mono-sm" style="color:var(--red)">Node status unavailable</span>';
+    return;
+  }
+
+  if (!data.rows.length) {
+    row.innerHTML = '<span class="mono-sm">No hosts configured</span>';
+    return;
+  }
+
+  row.innerHTML = data.rows.map(r => {
+    const stateCls = r.running ? 'node-chip-up' : 'node-chip-down';
+    const stateTxt = r.running ? '✓' : '✗';
+    return `<span class="node-stat">
+      <span class="node-stat-name">${esc(r.node)}</span>
+      <span class="node-chip-state ${stateCls}">${stateTxt}</span>
+    </span>`;
+  }).join('');
+}
+//***END v0.0.3
 
 function openVMModal(pre={}) {
   const defaults = { vm_type:'qemu', status:'unknown' };
@@ -1243,10 +1447,24 @@ async function loadHosts() {
   const d = await post({action:'host_list'});
   if (!d.ok) { grid.innerHTML='<div class="empty">Error loading hosts.</div>'; return; }
 
+  //*** v0.0.3
+  const sd = await post({ action:'node_status_list' });
+  const hostNodeState = {};
+  if (sd.ok && Array.isArray(sd.rows)) {
+    for (const r of sd.rows) {
+      const key = String(r.host ?? '');
+      if (!(key in hostNodeState)) hostNodeState[key] = false;
+      hostNodeState[key] = hostNodeState[key] || !!r.running;
+    }
+  }
+  //***END v0.0.3
+
   grid.innerHTML = d.rows.map(h => `
     <div class="host-card">
       <div class="host-card-header">
-        <span class="host-card-name">${esc(h.name)}</span>
+        <!-- //*** v0.0.3 -->
+        <span class="host-card-name">${esc(h.name)} <span class="node-chip-state ${(hostNodeState[h.name] ?? false) ? 'node-chip-up' : 'node-chip-down'}">${(hostNodeState[h.name] ?? false) ? '✓' : '✗'}</span></span>
+        <!-- //***END v0.0.3 -->
         <span class="type-badge t-qemu" style="font-size:11px">${h.vm_count} VM${h.vm_count!=1?'s':''}</span>
       </div>
       <div class="host-card-body">
@@ -1557,7 +1775,10 @@ function renderInfoPanel(d) {
 
   // ── Agent network interfaces (richer IPs) ────────────────
   if (d.agent_data?.interfaces?.length) {
-    html += `<div class="info-section"><div class="info-section-title">Network Interfaces (via Agent)</div>`;
+    //*** v0.0.3
+    const netTitle = d.type === 'lxc' ? 'Network Interfaces (live API)' : 'Network Interfaces (via Agent)';
+    html += `<div class="info-section"><div class="info-section-title">${netTitle}</div>`;
+    //***END v0.0.3
     for (const iface of d.agent_data.interfaces) {
       html += `<div class="net-row">
         <span class="net-id">${esc(iface.name)}</span>
