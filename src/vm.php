@@ -311,6 +311,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $node   = $nodes[0]['node'] ?? $host['hostname'] ?? 'localhost';
         $synced = 0;
 
+        //*** v0.0.4
+        $seen_vmids = [];
+        //***End v0.0.4
+
         $upsert_vm = function(int $vmid, string $name, string $type, string $status, ?string $vm_ip, ?string $mac) use ($host_id, $db) {
             $st = $db->prepare(
                 "INSERT INTO vms (vm_id,host_id,name,ip,vm_type,status,mac,last_synced)
@@ -366,6 +370,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     }
                 }
                 $upsert_vm($vmid, $vm['name'] ?? "VM-$vmid", $type, $status, $vm_ip, $mac);
+                //*** v0.0.4
+                $seen_vmids[$vmid] = true;
+                //***End v0.0.4
                 $synced++;
             }
 
@@ -407,6 +414,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     }
                 }
                 $upsert_vm($vmid, $ct['name'] ?? "CT-$vmid", 'lxc', $status, $vm_ip, $mac);
+                //*** v0.0.4
+                $seen_vmids[$vmid] = true;
+                //***End v0.0.4
                 $synced++;
             }
         } else {
@@ -421,7 +431,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
 
-        json_out(['ok'=>true, 'synced'=>$synced, 'node'=>$node]);
+            //*** v0.0.4
+            $deleted = 0;
+            if (!$is_pbs) {
+              $vmid_list = array_map('intval', array_keys($seen_vmids));
+              if (!empty($vmid_list)) {
+                $vmid_csv = implode(',', $vmid_list);
+                $db->query(
+                  "DELETE FROM vms
+                   WHERE host_id={$host_id}
+                     AND vm_type IN ('qemu','lxc','template')
+                     AND vm_id NOT IN ({$vmid_csv})"
+                );
+                $deleted = (int)$db->affected_rows;
+              } else {
+                $st = $db->prepare(
+                  "DELETE FROM vms
+                   WHERE host_id=?
+                     AND vm_type IN ('qemu','lxc','template')"
+                );
+                $st->bind_param('i', $host_id);
+                $st->execute();
+                $deleted = $st->affected_rows;
+              }
+            }
+            
+            json_out(['ok'=>true, 'synced'=>$synced, 'deleted'=>$deleted, 'node'=>$node]);
+            //***End v0.0.4
+
     }
 
     // ── Hosts dropdown for VM form ───────────────────────────
@@ -1531,7 +1568,10 @@ async function syncHost(host_id, name) {
   toast(`Syncing ${name}…`, true);
   const d = await post({action:'host_sync', host_id});
   if (d.ok) {
-    toast(`✓ ${name} — ${d.synced} VMs/containers synced from node "${d.node}"`, true);
+    //*** v0.0.4
+    const deleted = Number.parseInt(d.deleted ?? 0, 10) || 0;
+    toast(`✓ ${name} — ${deleted} deleted, ${d.synced} synced (${d.node})`, true);
+    //***End v0.0.4
     loadVMs();
   } else {
     toast(`✗ ${name}: ${d.msg}`, false);
